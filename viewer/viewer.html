@@ -1,1368 +1,1369 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LLM Capture Viewer</title>
     <style>
-        :root {
-            --bg-canvas: #0d1117;
-            --bg-canvas-subtle: #161b22;
-            --bg-border: #30363d;
-            --text-primary: #c9d1d9;
-            --text-secondary: #8b949e;
-            --accent-blue: #58a6ff;
-            --accent-green: #238636;
-            --accent-red: #da3633;
-            --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-        }
+      :root {
+        --bg-canvas: #0d1117;
+        --bg-canvas-subtle: #161b22;
+        --bg-border: #30363d;
+        --text-primary: #c9d1d9;
+        --text-secondary: #8b949e;
+        --accent-blue: #58a6ff;
+        --accent-green: #238636;
+        --accent-red: #da3633;
+        --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        --font-sans:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+          'Segoe UI Emoji';
+      }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-        /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 12px;
-            height: 12px;
-        }
+      /* Custom Scrollbars */
+      ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+      }
 
-        ::-webkit-scrollbar-track {
-            background: var(--bg-canvas);
-        }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-canvas);
+      }
 
-        ::-webkit-scrollbar-thumb {
-            background-color: #30363d;
-            border: 3px solid var(--bg-canvas);
-            border-radius: 6px;
-        }
+      ::-webkit-scrollbar-thumb {
+        background-color: #30363d;
+        border: 3px solid var(--bg-canvas);
+        border-radius: 6px;
+      }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background-color: #8b949e;
-        }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #8b949e;
+      }
 
-        ::-webkit-scrollbar-corner {
-            background: var(--bg-canvas);
-        }
+      ::-webkit-scrollbar-corner {
+        background: var(--bg-canvas);
+      }
 
-        body {
-            background-color: var(--bg-canvas);
-            color: var(--text-primary);
-            font-family: var(--font-sans);
-            height: 100vh;
-            display: flex;
-            overflow: hidden;
-            font-size: 14px;
-        }
+      body {
+        background-color: var(--bg-canvas);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        height: 100vh;
+        display: flex;
+        overflow: hidden;
+        font-size: 14px;
+      }
 
-        /* ========== SCREEN 1: Session Selector ========== */
-        #screen-welcome {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--bg-canvas);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
+      /* ========== SCREEN 1: Session Selector ========== */
+      #screen-welcome {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--bg-canvas);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+      }
 
-        #screen-welcome.hidden {
-            display: none;
-        }
+      #screen-welcome.hidden {
+        display: none;
+      }
 
-        .welcome-title {
-            font-size: 28px;
-            margin-bottom: 10px;
-            color: var(--text-primary);
-        }
+      .welcome-title {
+        font-size: 28px;
+        margin-bottom: 10px;
+        color: var(--text-primary);
+      }
 
-        .welcome-subtitle {
-            color: var(--text-secondary);
-            margin-bottom: 40px;
-            font-size: 14px;
-        }
+      .welcome-subtitle {
+        color: var(--text-secondary);
+        margin-bottom: 40px;
+        font-size: 14px;
+      }
 
-        #session-selector-container {
-            width: 100%;
-            max-width: 800px;
-            max-height: 60vh;
-            overflow-y: auto;
-            border: 1px solid var(--bg-border);
-            border-radius: 8px;
-            background-color: var(--bg-canvas-subtle);
-        }
+      #session-selector-container {
+        width: 100%;
+        max-width: 800px;
+        max-height: 60vh;
+        overflow-y: auto;
+        border: 1px solid var(--bg-border);
+        border-radius: 8px;
+        background-color: var(--bg-canvas-subtle);
+      }
 
-        .session-item {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--bg-border);
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
+      .session-item {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--bg-border);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+      }
 
-        .session-item:last-child {
-            border-bottom: none;
-        }
+      .session-item:last-child {
+        border-bottom: none;
+      }
 
-        .session-item:hover {
-            background-color: #21262d;
-            padding-left: 24px;
-        }
+      .session-item:hover {
+        background-color: #21262d;
+        padding-left: 24px;
+      }
 
-        .session-name {
-            font-family: var(--font-mono);
-            font-size: 14px;
-            color: var(--accent-blue);
-        }
+      .session-name {
+        font-family: var(--font-mono);
+        font-size: 14px;
+        color: var(--accent-blue);
+      }
 
-        .session-meta {
-            color: var(--text-secondary);
-            font-size: 12px;
-            margin-top: 4px;
-        }
+      .session-meta {
+        color: var(--text-secondary);
+        font-size: 12px;
+        margin-top: 4px;
+      }
 
-        .session-count {
-            background-color: rgba(88, 166, 255, 0.1);
-            color: var(--accent-blue);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
+      .session-count {
+        background-color: rgba(88, 166, 255, 0.1);
+        color: var(--accent-blue);
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+      }
 
-        .welcome-controls {
-            margin-top: 30px;
-            display: flex;
-            gap: 15px;
-        }
+      .welcome-controls {
+        margin-top: 30px;
+        display: flex;
+        gap: 15px;
+      }
 
-        .btn-large {
-            background-color: #21262d;
-            color: var(--text-primary);
-            border: 1px solid var(--bg-border);
-            padding: 10px 24px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: 0.2s;
-            font-family: var(--font-sans);
-        }
+      .btn-large {
+        background-color: #21262d;
+        color: var(--text-primary);
+        border: 1px solid var(--bg-border);
+        padding: 10px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: 0.2s;
+        font-family: var(--font-sans);
+      }
 
-        .btn-large:hover {
-            background-color: #30363d;
-            border-color: #8b949e;
-        }
+      .btn-large:hover {
+        background-color: #30363d;
+        border-color: #8b949e;
+      }
 
-        .btn-primary {
-            background-color: var(--accent-blue);
-            color: white;
-            border: none;
-        }
+      .btn-primary {
+        background-color: var(--accent-blue);
+        color: white;
+        border: none;
+      }
 
-        .btn-primary:hover {
-            background-color: #4693e6;
-        }
+      .btn-primary:hover {
+        background-color: #4693e6;
+      }
 
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--bg-border);
-            border-top-color: var(--accent-blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--bg-border);
+        border-top-color: var(--accent-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
+      }
 
-        #scanning-msg {
-            color: var(--text-secondary);
-            margin-top: 10px;
-        }
+      #scanning-msg {
+        color: var(--text-secondary);
+        margin-top: 10px;
+      }
 
-        /* ========== Main App Layout ========== */
-        #app-container {
-            display: none;
-            width: 100%;
-            height: 100%;
-        }
+      /* ========== Main App Layout ========== */
+      #app-container {
+        display: none;
+        width: 100%;
+        height: 100%;
+      }
 
+      #app-container.visible {
+        display: flex;
+      }
+
+      /* Sidebar */
+      #sidebar {
+        width: 300px;
+        background-color: var(--bg-canvas-subtle);
+        border-right: 1px solid var(--bg-border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+
+      #session-header {
+        padding: 15px;
+        border-bottom: 1px solid var(--bg-border);
+        background-color: rgba(88, 166, 255, 0.05);
+      }
+
+      #session-header-name {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--accent-blue);
+        margin-bottom: 5px;
+        word-break: break-all;
+      }
+
+      #session-header-meta {
+        font-size: 11px;
+        color: var(--text-secondary);
+      }
+
+      #sidebar-controls {
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--bg-border);
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn-small {
+        background-color: #21262d;
+        color: var(--text-secondary);
+        border: 1px solid var(--bg-border);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .btn-small:hover {
+        background-color: #30363d;
+        color: var(--text-primary);
+      }
+
+      #file-list {
+        flex: 1;
+        overflow-y: auto;
+        list-style: none;
+      }
+
+      .file-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--bg-border);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .file-item:hover {
+        background-color: #1f2428;
+      }
+
+      .file-item.active {
+        background-color: rgba(88, 166, 255, 0.1);
+        border-left: 3px solid var(--accent-blue);
+      }
+
+      .file-meta {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .file-id {
+        font-family: var(--font-mono);
+        font-weight: bold;
+        color: var(--accent-blue);
+      }
+
+      .file-status {
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: bold;
+      }
+
+      .status-200 {
+        background-color: rgba(35, 134, 54, 0.2);
+        color: #3fb950;
+      }
+
+      .status-error {
+        background-color: rgba(218, 54, 51, 0.2);
+        color: #f85149;
+      }
+
+      /* Stats Bar */
+      #stats-bar {
+        background-color: var(--bg-canvas-subtle);
+        border-bottom: 1px solid var(--bg-border);
+        padding: 10px 20px;
+        gap: 20px;
+        display: none;
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--text-primary);
+      }
+
+      .stat-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Main Content */
+      #main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      #empty-state {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        font-size: 1.2em;
+      }
+
+      #content-area {
+        display: none;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      header {
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--bg-border);
+        background-color: var(--bg-canvas-subtle);
+      }
+
+      h2 {
+        font-size: 16px;
+        margin-bottom: 5px;
+        word-break: break-all;
+        font-family: var(--font-mono);
+      }
+
+      .meta-tags span {
+        margin-right: 15px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      /* Tabs */
+      .tabs {
+        display: flex;
+        background-color: var(--bg-canvas-subtle);
+        border-bottom: 1px solid var(--bg-border);
+        padding: 0 20px;
+      }
+
+      .tab {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        color: var(--text-secondary);
+      }
+
+      .tab.active {
+        color: var(--text-primary);
+        border-bottom-color: var(--accent-blue);
+      }
+
+      .tab:hover {
+        color: var(--text-primary);
+      }
+
+      /* Panels */
+      .panel {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: none;
+      }
+
+      .panel.active {
+        display: block;
+      }
+
+      /* Conversation View */
+      .message {
+        margin-bottom: 24px;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--bg-border);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .role-user {
+        background: linear-gradient(180deg, rgba(56, 139, 253, 0.15) 0%, rgba(56, 139, 253, 0.05) 100%);
+        border-color: rgba(56, 139, 253, 0.3);
+        color: var(--text-primary);
+      }
+
+      .role-assistant {
+        background-color: var(--bg-canvas-subtle);
+        border-color: var(--bg-border);
+        color: var(--text-primary);
+      }
+
+      .role-system {
+        background: linear-gradient(180deg, rgba(248, 81, 73, 0.15) 0%, rgba(248, 81, 73, 0.05) 100%);
+        border-color: rgba(248, 81, 73, 0.3);
+        color: var(--text-primary);
+      }
+
+      .role-tool {
+        background: linear-gradient(180deg, rgba(163, 113, 247, 0.15) 0%, rgba(163, 113, 247, 0.05) 100%);
+        border-color: rgba(163, 113, 247, 0.3);
+        color: var(--text-primary);
+      }
+
+      .message-role {
+        font-weight: bold;
+        margin-bottom: 0;
+        text-transform: uppercase;
+        font-size: 11px;
+        opacity: 0.7;
+        letter-spacing: 0.5px;
+      }
+
+      .message-content {
+        white-space: pre-wrap;
+        line-height: 1.5;
+        font-family: var(--font-mono);
+        font-size: 13px;
+      }
+
+      /* Sub-boxes for structured content */
+      .sub-box {
+        border: 1px solid var(--bg-border);
+        border-radius: 6px;
+        overflow: hidden;
+        background-color: #0d1117;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+
+      .sub-box-header {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 4px 10px;
+        font-size: 11px;
+        font-weight: bold;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--bg-border);
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+      }
+
+      .sub-box-content {
+        padding: 10px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        color: var(--text-primary);
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      .generic-block {
+        border: 1px solid var(--bg-border);
+        border-radius: 6px;
+        padding: 10px 12px;
+        background-color: #0d1117;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        color: var(--text-primary);
+      }
+
+      .generic-block details {
+        margin: 6px 0;
+        padding-left: 8px;
+      }
+
+      .generic-block summary {
+        cursor: pointer;
+        color: var(--accent-blue);
+        font-weight: 600;
+      }
+
+      .generic-block pre {
+        margin: 6px 0 0;
+      }
+
+      .kv-row {
+        margin: 2px 0;
+      }
+
+      .raw-header {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+      }
+
+      /* Request Parameters */
+      .request-params {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--bg-border);
+      }
+
+      .param-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background-color: rgba(88, 166, 255, 0.1);
+        border: 1px solid rgba(88, 166, 255, 0.2);
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+
+      .param-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      .param-value {
+        color: var(--accent-blue);
+        font-family: var(--font-mono);
+        font-weight: 600;
+      }
+
+      /* Tools Panel uses same card style as Conversation */
+      .reasoning-box {
+        border-color: rgba(238, 138, 248, 0.3);
+      }
+
+      .reasoning-box .sub-box-header {
+        color: #d2a8ff;
+        background-color: rgba(210, 168, 255, 0.1);
+        border-bottom-color: rgba(238, 138, 248, 0.3);
+      }
+
+      .tool-calls-box {
+        border-color: rgba(88, 166, 255, 0.3);
+      }
+
+      .tool-calls-box .sub-box-header {
+        color: var(--accent-blue);
+        background-color: rgba(88, 166, 255, 0.1);
+        border-bottom-color: rgba(88, 166, 255, 0.3);
+      }
+
+      /* Specific Sub-box Types */
+      .content-box .sub-box-content {
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .meta-box .sub-box-header {
+        padding: 2px 8px;
+        font-size: 10px;
+        opacity: 0.8;
+      }
+
+      .meta-box .sub-box-content {
+        padding: 6px 10px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .code-box .sub-box-content {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        white-space: pre-wrap;
+        color: #a5d6ff;
+        background-color: #0d1117;
+      }
+
+      .output-box .sub-box-content {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: #7ee787;
+      }
+
+      /* JSON View */
+      pre {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background-color: #0d1117;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid var(--bg-border);
+        overflow-x: auto;
+      }
+
+      /* Metadata Table */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      td,
+      th {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--bg-border);
+      }
+
+      th {
+        color: var(--text-secondary);
+        font-weight: normal;
+        width: 150px;
+      }
+
+      td {
+        font-family: var(--font-mono);
+      }
+
+      /* Copy Button */
+      .btn-copy {
+        background: transparent;
+        border: 1px solid var(--bg-border);
+        color: var(--text-secondary);
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 10px;
+        cursor: pointer;
+        margin-left: auto;
+        /* Push to right */
+        transition: all 0.2s;
+        opacity: 0.7;
+      }
+
+      .btn-copy:hover {
+        background-color: #30363d;
+        color: var(--text-primary);
+        opacity: 1;
+      }
+
+      /* Syntax Highlighting */
+      .hljs-string {
+        color: #a5d6ff;
+      }
+
+      .hljs-number {
+        color: #79c0ff;
+      }
+
+      .hljs-boolean {
+        color: #ff7b72;
+      }
+
+      .hljs-null {
+        color: #ff7b72;
+      }
+
+      .hljs-key {
+        color: #7ee787;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
         #app-container.visible {
-            display: flex;
+          flex-direction: column;
         }
 
-        /* Sidebar */
         #sidebar {
-            width: 300px;
-            background-color: var(--bg-canvas-subtle);
-            border-right: 1px solid var(--bg-border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
+          width: 100%;
+          height: 30%;
+          border-right: none;
+          border-bottom: 1px solid var(--bg-border);
         }
 
-        #session-header {
-            padding: 15px;
-            border-bottom: 1px solid var(--bg-border);
-            background-color: rgba(88, 166, 255, 0.05);
-        }
-
-        #session-header-name {
-            font-family: var(--font-mono);
-            font-size: 13px;
-            color: var(--accent-blue);
-            margin-bottom: 5px;
-            word-break: break-all;
-        }
-
-        #session-header-meta {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        #sidebar-controls {
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--bg-border);
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-small {
-            background-color: #21262d;
-            color: var(--text-secondary);
-            border: 1px solid var(--bg-border);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .btn-small:hover {
-            background-color: #30363d;
-            color: var(--text-primary);
-        }
-
-        #file-list {
-            flex: 1;
-            overflow-y: auto;
-            list-style: none;
-        }
-
-        .file-item {
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--bg-border);
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .file-item:hover {
-            background-color: #1f2428;
-        }
-
-        .file-item.active {
-            background-color: rgba(88, 166, 255, 0.1);
-            border-left: 3px solid var(--accent-blue);
-        }
-
-        .file-meta {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .file-id {
-            font-family: var(--font-mono);
-            font-weight: bold;
-            color: var(--accent-blue);
-        }
-
-        .file-status {
-            font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: bold;
-        }
-
-        .status-200 {
-            background-color: rgba(35, 134, 54, 0.2);
-            color: #3fb950;
-        }
-
-        .status-error {
-            background-color: rgba(218, 54, 51, 0.2);
-            color: #f85149;
-        }
-
-        /* Stats Bar */
-        #stats-bar {
-            background-color: var(--bg-canvas-subtle);
-            border-bottom: 1px solid var(--bg-border);
-            padding: 10px 20px;
-            gap: 20px;
-            display: none;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--text-primary);
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Main Content */
         #main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+          height: 70%;
         }
-
-        #empty-state {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 1.2em;
-        }
-
-        #content-area {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        header {
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--bg-border);
-            background-color: var(--bg-canvas-subtle);
-        }
-
-        h2 {
-            font-size: 16px;
-            margin-bottom: 5px;
-            word-break: break-all;
-            font-family: var(--font-mono);
-        }
-
-        .meta-tags span {
-            margin-right: 15px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            background-color: var(--bg-canvas-subtle);
-            border-bottom: 1px solid var(--bg-border);
-            padding: 0 20px;
-        }
-
-        .tab {
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            color: var(--text-secondary);
-        }
-
-        .tab.active {
-            color: var(--text-primary);
-            border-bottom-color: var(--accent-blue);
-        }
-
-        .tab:hover {
-            color: var(--text-primary);
-        }
-
-        /* Panels */
-        .panel {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: none;
-        }
-
-        .panel.active {
-            display: block;
-        }
-
-        /* Conversation View */
-        .message {
-            margin-bottom: 24px;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--bg-border);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .role-user {
-            background: linear-gradient(180deg, rgba(56, 139, 253, 0.15) 0%, rgba(56, 139, 253, 0.05) 100%);
-            border-color: rgba(56, 139, 253, 0.3);
-            color: var(--text-primary);
-        }
-
-        .role-assistant {
-            background-color: var(--bg-canvas-subtle);
-            border-color: var(--bg-border);
-            color: var(--text-primary);
-        }
-
-        .role-system {
-            background: linear-gradient(180deg, rgba(248, 81, 73, 0.15) 0%, rgba(248, 81, 73, 0.05) 100%);
-            border-color: rgba(248, 81, 73, 0.3);
-            color: var(--text-primary);
-        }
-
-        .role-tool {
-            background: linear-gradient(180deg, rgba(163, 113, 247, 0.15) 0%, rgba(163, 113, 247, 0.05) 100%);
-            border-color: rgba(163, 113, 247, 0.3);
-            color: var(--text-primary);
-        }
-
-        .message-role {
-            font-weight: bold;
-            margin-bottom: 0;
-            text-transform: uppercase;
-            font-size: 11px;
-            opacity: 0.7;
-            letter-spacing: 0.5px;
-        }
-
-        .message-content {
-            white-space: pre-wrap;
-            line-height: 1.5;
-            font-family: var(--font-mono);
-            font-size: 13px;
-        }
-
-        /* Sub-boxes for structured content */
-        .sub-box {
-            border: 1px solid var(--bg-border);
-            border-radius: 6px;
-            overflow: hidden;
-            background-color: #0d1117;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        .sub-box-header {
-            background-color: rgba(255, 255, 255, 0.05);
-            padding: 4px 10px;
-            font-size: 11px;
-            font-weight: bold;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--bg-border);
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-        }
-
-        .sub-box-content {
-            padding: 10px;
-            font-family: var(--font-mono);
-            font-size: 13px;
-            white-space: pre-wrap;
-            overflow-x: auto;
-            color: var(--text-primary);
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .generic-block {
-            border: 1px solid var(--bg-border);
-            border-radius: 6px;
-            padding: 10px 12px;
-            background-color: #0d1117;
-            font-family: var(--font-mono);
-            font-size: 12px;
-            white-space: pre-wrap;
-            overflow-x: auto;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
-        }
-
-        .generic-block details {
-            margin: 6px 0;
-            padding-left: 8px;
-        }
-
-        .generic-block summary {
-            cursor: pointer;
-            color: var(--accent-blue);
-            font-weight: 600;
-        }
-
-        .generic-block pre {
-            margin: 6px 0 0;
-        }
-
-        .kv-row {
-            margin: 2px 0;
-        }
-
-        .raw-header {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 10px;
-        }
-
-        /* Request Parameters */
-        .request-params {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid var(--bg-border);
-        }
-
-        .param-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background-color: rgba(88, 166, 255, 0.1);
-            border: 1px solid rgba(88, 166, 255, 0.2);
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-
-        .param-label {
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .param-value {
-            color: var(--accent-blue);
-            font-family: var(--font-mono);
-            font-weight: 600;
-        }
-
-        /* Tools Panel uses same card style as Conversation */
-        .reasoning-box {
-            border-color: rgba(238, 138, 248, 0.3);
-        }
-
-        .reasoning-box .sub-box-header {
-            color: #d2a8ff;
-            background-color: rgba(210, 168, 255, 0.1);
-            border-bottom-color: rgba(238, 138, 248, 0.3);
-        }
-
-        .tool-calls-box {
-            border-color: rgba(88, 166, 255, 0.3);
-        }
-
-        .tool-calls-box .sub-box-header {
-            color: var(--accent-blue);
-            background-color: rgba(88, 166, 255, 0.1);
-            border-bottom-color: rgba(88, 166, 255, 0.3);
-        }
-
-        /* Specific Sub-box Types */
-        .content-box .sub-box-content {
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-
-        .meta-box .sub-box-header {
-            padding: 2px 8px;
-            font-size: 10px;
-            opacity: 0.8;
-        }
-
-        .meta-box .sub-box-content {
-            padding: 6px 10px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .code-box .sub-box-content {
-            font-family: var(--font-mono);
-            font-size: 12px;
-            white-space: pre-wrap;
-            color: #a5d6ff;
-            background-color: #0d1117;
-        }
-
-        .output-box .sub-box-content {
-            font-family: var(--font-mono);
-            font-size: 12px;
-            color: #7ee787;
-        }
-
-        /* JSON View */
-        pre {
-            font-family: var(--font-mono);
-            font-size: 12px;
-            background-color: #0d1117;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid var(--bg-border);
-            overflow-x: auto;
-        }
-
-        /* Metadata Table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        td,
-        th {
-            text-align: left;
-            padding: 8px;
-            border-bottom: 1px solid var(--bg-border);
-        }
-
-        th {
-            color: var(--text-secondary);
-            font-weight: normal;
-            width: 150px;
-        }
-
-        td {
-            font-family: var(--font-mono);
-        }
-
-        /* Copy Button */
-        .btn-copy {
-            background: transparent;
-            border: 1px solid var(--bg-border);
-            color: var(--text-secondary);
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 10px;
-            cursor: pointer;
-            margin-left: auto;
-            /* Push to right */
-            transition: all 0.2s;
-            opacity: 0.7;
-        }
-
-        .btn-copy:hover {
-            background-color: #30363d;
-            color: var(--text-primary);
-            opacity: 1;
-        }
-
-        /* Syntax Highlighting */
-        .hljs-string {
-            color: #a5d6ff;
-        }
-
-        .hljs-number {
-            color: #79c0ff;
-        }
-
-        .hljs-boolean {
-            color: #ff7b72;
-        }
-
-        .hljs-null {
-            color: #ff7b72;
-        }
-
-        .hljs-key {
-            color: #7ee787;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            #app-container.visible {
-                flex-direction: column;
-            }
-
-            #sidebar {
-                width: 100%;
-                height: 30%;
-                border-right: none;
-                border-bottom: 1px solid var(--bg-border);
-            }
-
-            #main {
-                height: 70%;
-            }
-        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
-
+  <body>
     <!-- ========== SCREEN 1: Welcome & Session Selector ========== -->
     <div id="screen-welcome">
-        <div class="welcome-title">LLM Capture Viewer</div>
-        <div class="welcome-subtitle">Select a folder to view captured sessions</div>
+      <div class="welcome-title">LLM Capture Viewer</div>
+      <div class="welcome-subtitle">Select a folder to view captured sessions</div>
 
-        <div id="folder-selector" style="margin-bottom: 30px;">
-            <input type="file" id="inp-folder" webkitdirectory directory multiple style="display:none">
-            <button id="btn-select-folder" class="btn-large btn-primary">Select Log Folder</button>
-            <div id="selected-path"
-                style="margin-top: 10px; color: var(--text-secondary); font-size: 12px; font-family: var(--font-mono);">
-            </div>
-        </div>
+      <div id="folder-selector" style="margin-bottom: 30px">
+        <input type="file" id="inp-folder" webkitdirectory directory multiple style="display: none" />
+        <button id="btn-select-folder" class="btn-large btn-primary">Select Log Folder</button>
+        <div
+          id="selected-path"
+          style="margin-top: 10px; color: var(--text-secondary); font-size: 12px; font-family: var(--font-mono)"
+        ></div>
+      </div>
 
-        <div id="scanning-indicator" style="display: none; flex-direction: column; align-items: center;">
-            <div class="loading-spinner"></div>
-            <div id="scanning-msg">Scanning for sessions...</div>
-        </div>
+      <div id="scanning-indicator" style="display: none; flex-direction: column; align-items: center">
+        <div class="loading-spinner"></div>
+        <div id="scanning-msg">Scanning for sessions...</div>
+      </div>
 
-        <div id="session-list-wrapper" style="width: 100%; max-width: 800px; display: none;">
-            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: var(--text-secondary); font-size: 13px;">Available Sessions</span>
-                <button id="btn-rescan" class="btn-small">Rescan</button>
-            </div>
-            <div id="session-selector-container"></div>
-            <div class="welcome-controls">
-                <button id="btn-change-folder" class="btn-large">Change Folder</button>
-            </div>
+      <div id="session-list-wrapper" style="width: 100%; max-width: 800px; display: none">
+        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center">
+          <span style="color: var(--text-secondary); font-size: 13px">Available Sessions</span>
+          <button id="btn-rescan" class="btn-small">Rescan</button>
         </div>
+        <div id="session-selector-container"></div>
+        <div class="welcome-controls">
+          <button id="btn-change-folder" class="btn-large">Change Folder</button>
+        </div>
+      </div>
     </div>
 
     <!-- ========== SCREEN 2: Main Application ========== -->
     <div id="app-container">
-        <div id="sidebar">
-            <div id="session-header">
-                <div id="session-header-name">-</div>
-                <div id="session-header-meta">-</div>
-            </div>
-            <div id="sidebar-controls">
-                <button id="btn-back" class="btn-small">← Back to Sessions</button>
-            </div>
-            <ul id="file-list"></ul>
+      <div id="sidebar">
+        <div id="session-header">
+          <div id="session-header-name">-</div>
+          <div id="session-header-meta">-</div>
         </div>
-
-        <div id="main">
-            <div id="stats-bar">
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-total">0</span>
-                    <span class="stat-label">Requests</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-duration">0ms</span>
-                    <span class="stat-label">Avg Duration</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-types">0 / 0</span>
-                    <span class="stat-label">Stream / JSON</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-models">-</span>
-                    <span class="stat-label">Models</span>
-                </div>
-            </div>
-            <div id="empty-state">Select a request to view details</div>
-            <div id="content-area">
-                <header>
-                    <h2 id="req-url">POST /v1/chat/completions</h2>
-                    <div class="meta-tags">
-                        <span id="req-time">2023-10-27 10:00:00</span>
-                        <span id="req-duration">120ms</span>
-                        <span id="req-type">json</span>
-                    </div>
-                    <div class="request-params" id="request-params">
-                    </div>
-                </header>
-
-                <div class="tabs">
-                    <div class="tab active" onclick="switchTab('conversation')">Conversation</div>
-                    <div class="tab" onclick="switchTab('tools')">Tools</div>
-                    <div class="tab" onclick="switchTab('raw')">Raw Data</div>
-                    <div class="tab" onclick="switchTab('metadata')">Metadata</div>
-                </div>
-
-                <div id="panel-conversation" class="panel active"></div>
-                <div id="panel-tools" class="panel">
-                    <div id="tools-container"></div>
-                </div>
-                <div id="panel-raw" class="panel">
-                    <div class="raw-header">
-                        <button id="btn-copy-raw" class="btn-small">Copy All</button>
-                    </div>
-                    <pre id="json-viewer"></pre>
-                </div>
-                <div id="panel-metadata" class="panel">
-                    <table id="meta-table"></table>
-                </div>
-            </div>
+        <div id="sidebar-controls">
+          <button id="btn-back" class="btn-small">← Back to Sessions</button>
         </div>
+        <ul id="file-list"></ul>
+      </div>
+
+      <div id="main">
+        <div id="stats-bar">
+          <div class="stat-item">
+            <span class="stat-value" id="stat-total">0</span>
+            <span class="stat-label">Requests</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="stat-duration">0ms</span>
+            <span class="stat-label">Avg Duration</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="stat-types">0 / 0</span>
+            <span class="stat-label">Stream / JSON</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="stat-models">-</span>
+            <span class="stat-label">Models</span>
+          </div>
+        </div>
+        <div id="empty-state">Select a request to view details</div>
+        <div id="content-area">
+          <header>
+            <h2 id="req-url">POST /v1/chat/completions</h2>
+            <div class="meta-tags">
+              <span id="req-time">2023-10-27 10:00:00</span>
+              <span id="req-duration">120ms</span>
+              <span id="req-type">json</span>
+            </div>
+            <div class="request-params" id="request-params"></div>
+          </header>
+
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab('conversation')">Conversation</div>
+            <div class="tab" onclick="switchTab('tools')">Tools</div>
+            <div class="tab" onclick="switchTab('raw')">Raw Data</div>
+            <div class="tab" onclick="switchTab('metadata')">Metadata</div>
+          </div>
+
+          <div id="panel-conversation" class="panel active"></div>
+          <div id="panel-tools" class="panel">
+            <div id="tools-container"></div>
+          </div>
+          <div id="panel-raw" class="panel">
+            <div class="raw-header">
+              <button id="btn-copy-raw" class="btn-small">Copy All</button>
+            </div>
+            <pre id="json-viewer"></pre>
+          </div>
+          <div id="panel-metadata" class="panel">
+            <table id="meta-table"></table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-        // ========== PARSER REGISTRY ==========
+      // ========== PARSER REGISTRY ==========
 
-        const parserRegistry = [];
+      const parserRegistry = [];
 
-        function registerParser(parser) {
-            if (!parser || typeof parser.match !== "function") return;
-            parserRegistry.push(parser);
+      function registerParser(parser) {
+        if (!parser || typeof parser.match !== 'function') return;
+        parserRegistry.push(parser);
+      }
+
+      function selectParser(logObj) {
+        const url = logObj?.metadata?.url || '';
+        for (const parser of parserRegistry) {
+          try {
+            if (parser.match(url, logObj)) return parser;
+          } catch (e) {
+            // ignore
+          }
+        }
+        return parserRegistry[0];
+      }
+
+      function flattenContent(content) {
+        if (content === undefined || content === null) return '';
+        if (typeof content === 'string') return content;
+
+        if (Array.isArray(content)) {
+          return content
+            .map((part) => {
+              if (typeof part === 'string') return part;
+              if (!part || typeof part !== 'object') return String(part);
+
+              if (part.type === 'input_text' || part.type === 'output_text') {
+                return part.text || '';
+              }
+
+              if (part.type === 'text') {
+                return part.text || part.value || '';
+              }
+
+              if (typeof part.text === 'string') return part.text;
+              if (typeof part.content === 'string') return part.content;
+              return '';
+            })
+            .filter(Boolean)
+            .join('');
         }
 
-        function selectParser(logObj) {
-            const url = logObj?.metadata?.url || "";
-            for (const parser of parserRegistry) {
-                try {
-                    if (parser.match(url, logObj)) return parser;
-                } catch (e) {
-                    // ignore
-                }
-            }
-            return parserRegistry[0];
+        if (typeof content === 'object') {
+          if (typeof content.text === 'string') return content.text;
+          if (typeof content.content === 'string') return content.content;
         }
 
-        function flattenContent(content) {
-            if (content === undefined || content === null) return "";
-            if (typeof content === "string") return content;
+        return String(content);
+      }
 
-            if (Array.isArray(content)) {
-                return content
-                    .map((part) => {
-                        if (typeof part === "string") return part;
-                        if (!part || typeof part !== "object") return String(part);
+      function parseRequestMessages(messages) {
+        if (!Array.isArray(messages)) return [];
 
-                        if (part.type === "input_text" || part.type === "output_text") {
-                            return part.text || "";
-                        }
+        return messages.map((msg) => {
+          const parsed = {
+            role: msg.role,
+          };
 
-                        if (part.type === "text") {
-                            return part.text || part.value || "";
-                        }
+          if (msg.content) {
+            parsed.content = msg.content;
+          }
 
-                        if (typeof part.text === "string") return part.text;
-                        if (typeof part.content === "string") return part.content;
-                        return "";
-                    })
-                    .filter(Boolean)
-                    .join("");
+          if (msg.reasoning_content) {
+            parsed.reasoning_content = msg.reasoning_content;
+          }
+
+          if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
+            // Preserve all fields in tool_calls without filtering
+            parsed.tool_calls = msg.tool_calls;
+          }
+
+          if (msg.tool_call_id) {
+            parsed.tool_call_id = msg.tool_call_id;
+          }
+
+          if (msg.name) {
+            parsed.name = msg.name;
+          }
+
+          return parsed;
+        });
+      }
+
+      function parseInputMessages(input) {
+        if (!Array.isArray(input)) return [];
+
+        const messages = [];
+
+        for (const item of input) {
+          if (!item || typeof item !== 'object') continue;
+
+          if (item.role) {
+            const contentText = flattenContent(item.content);
+            const msg = { role: item.role };
+
+            if (contentText) {
+              msg.content = contentText;
             }
 
-            if (typeof content === "object") {
-                if (typeof content.text === "string") return content.text;
-                if (typeof content.content === "string") return content.content;
+            if (item.reasoning_content) {
+              msg.reasoning_content = item.reasoning_content;
             }
 
-            return String(content);
-        }
+            if (item.tool_calls && Array.isArray(item.tool_calls)) {
+              // Preserve all fields in tool_calls without filtering
+              msg.tool_calls = item.tool_calls;
+            }
 
-        function parseRequestMessages(messages) {
-            if (!Array.isArray(messages)) return [];
+            messages.push(msg);
+            continue;
+          }
 
-            return messages.map((msg) => {
-                const parsed = {
-                    role: msg.role,
-                };
-
-                if (msg.content) {
-                    parsed.content = msg.content;
-                }
-
-                if (msg.reasoning_content) {
-                    parsed.reasoning_content = msg.reasoning_content;
-                }
-
-                if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
-                    // Preserve all fields in tool_calls without filtering
-                    parsed.tool_calls = msg.tool_calls;
-                }
-
-                if (msg.tool_call_id) {
-                    parsed.tool_call_id = msg.tool_call_id;
-                }
-
-                if (msg.name) {
-                    parsed.name = msg.name;
-                }
-
-                return parsed;
+          if (item.type === 'function_call') {
+            messages.push({
+              type: 'function_call',
+              name: item.name || '',
+              call_id: item.call_id || '',
+              id: item.id || '',
+              arguments: item.arguments || '',
             });
+            continue;
+          }
+
+          if (item.type === 'function_call_output') {
+            messages.push({
+              type: 'function_call_output',
+              call_id: item.call_id || '',
+              output: item.output,
+            });
+          }
         }
 
-        function parseInputMessages(input) {
-            if (!Array.isArray(input)) return [];
+        return messages;
+      }
 
-            const messages = [];
+      function parseSSEStreamToMessage(sseLines) {
+        const message = {
+          role: 'assistant',
+          content: '',
+          reasoning_content: '',
+        };
 
-            for (const item of input) {
-                if (!item || typeof item !== "object") continue;
+        const toolCallsMap = new Map();
+        let currentEvent = '';
 
-                if (item.role) {
-                    const contentText = flattenContent(item.content);
-                    const msg = { role: item.role };
+        const appendText = (text, isReasoning) => {
+          if (!text) return;
+          if (isReasoning) {
+            message.reasoning_content += text;
+          } else {
+            message.content += text;
+          }
+        };
 
-                    if (contentText) {
-                        msg.content = contentText;
-                    }
+        for (const line of sseLines) {
+          if (line.startsWith('event:')) {
+            currentEvent = line.slice(6).trim();
+            continue;
+          }
 
-                    if (item.reasoning_content) {
-                        msg.reasoning_content = item.reasoning_content;
-                    }
+          if (!line.startsWith('data: ')) continue;
 
-                    if (item.tool_calls && Array.isArray(item.tool_calls)) {
-                        // Preserve all fields in tool_calls without filtering
-                        msg.tool_calls = item.tool_calls;
-                    }
+          const jsonStr = line.slice(6);
+          if (jsonStr === '[DONE]') continue;
 
-                    messages.push(msg);
-                    continue;
+          try {
+            const chunk = JSON.parse(jsonStr);
+
+            // Chat Completions style
+            const delta = chunk.choices?.[0]?.delta;
+            if (delta) {
+              if (delta.content) {
+                message.content += delta.content;
+              }
+
+              if (delta.reasoning_content) {
+                message.reasoning_content += delta.reasoning_content;
+              }
+
+              if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
+                for (const tc of delta.tool_calls) {
+                  const index = tc.index ?? 0;
+                  let existing = toolCallsMap.get(index);
+                  if (!existing) {
+                    existing = {
+                      id: tc.id || '',
+                      type: tc.type || 'function',
+                      function: { name: '', arguments: '' },
+                    };
+                    toolCallsMap.set(index, existing);
+                  }
+
+                  if (tc.id) existing.id = tc.id;
+                  if (tc.type) existing.type = tc.type;
+                  if (tc.function?.name) {
+                    existing.function.name += tc.function.name;
+                  }
+                  if (tc.function?.arguments) {
+                    existing.function.arguments += tc.function.arguments;
+                  }
                 }
+              }
 
-                if (item.type === "function_call") {
-                    messages.push({
-                        type: "function_call",
-                        name: item.name || "",
-                        call_id: item.call_id || "",
-                        id: item.id || "",
-                        arguments: item.arguments || "",
-                    });
-                    continue;
-                }
-
-                if (item.type === "function_call_output") {
-                    messages.push({
-                        type: "function_call_output",
-                        call_id: item.call_id || "",
-                        output: item.output,
-                    });
-                }
+              continue;
             }
 
-            return messages;
-        }
+            // Responses API style
+            const isReasoningEvent = currentEvent.includes('reasoning');
+            const textDelta =
+              chunk?.delta ??
+              chunk?.text ??
+              chunk?.content ??
+              chunk?.value ??
+              chunk?.output_text ??
+              chunk?.output?.text;
 
-        function parseSSEStreamToMessage(sseLines) {
-            const message = {
-                role: "assistant",
-                content: "",
-                reasoning_content: "",
-            };
-
-            const toolCallsMap = new Map();
-            let currentEvent = "";
-
-            const appendText = (text, isReasoning) => {
-                if (!text) return;
-                if (isReasoning) {
-                    message.reasoning_content += text;
-                } else {
-                    message.content += text;
-                }
-            };
-
-            for (const line of sseLines) {
-                if (line.startsWith("event:")) {
-                    currentEvent = line.slice(6).trim();
-                    continue;
-                }
-
-                if (!line.startsWith("data: ")) continue;
-
-                const jsonStr = line.slice(6);
-                if (jsonStr === "[DONE]") continue;
-
-                try {
-                    const chunk = JSON.parse(jsonStr);
-
-                    // Chat Completions style
-                    const delta = chunk.choices?.[0]?.delta;
-                    if (delta) {
-                        if (delta.content) {
-                            message.content += delta.content;
-                        }
-
-                        if (delta.reasoning_content) {
-                            message.reasoning_content += delta.reasoning_content;
-                        }
-
-                        if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
-                            for (const tc of delta.tool_calls) {
-                                const index = tc.index ?? 0;
-                                let existing = toolCallsMap.get(index);
-                                if (!existing) {
-                                    existing = {
-                                        id: tc.id || "",
-                                        type: tc.type || "function",
-                                        function: { name: "", arguments: "" },
-                                    };
-                                    toolCallsMap.set(index, existing);
-                                }
-
-                                if (tc.id) existing.id = tc.id;
-                                if (tc.type) existing.type = tc.type;
-                                if (tc.function?.name) {
-                                    existing.function.name += tc.function.name;
-                                }
-                                if (tc.function?.arguments) {
-                                    existing.function.arguments += tc.function.arguments;
-                                }
-                            }
-                        }
-
-                        continue;
-                    }
-
-                    // Responses API style
-                    const isReasoningEvent = currentEvent.includes("reasoning");
-                    const textDelta =
-                        chunk?.delta ??
-                        chunk?.text ??
-                        chunk?.content ??
-                        chunk?.value ??
-                        chunk?.output_text ??
-                        chunk?.output?.text;
-
-                    if (typeof textDelta === "string") {
-                        appendText(textDelta, isReasoningEvent);
-                    }
-
-                    if (chunk?.type === "function_call" || currentEvent.includes("tool")) {
-                        const toolCall = {
-                            id: chunk?.id || chunk?.call_id || "",
-                            type: "function",
-                            function: {
-                                name: chunk?.name || "",
-                                arguments: chunk?.arguments || "",
-                            },
-                        };
-
-                        if (toolCall.id || toolCall.function.name) {
-                            toolCallsMap.set(toolCallsMap.size, toolCall);
-                        }
-                    }
-                } catch {
-                    // ignore
-                }
+            if (typeof textDelta === 'string') {
+              appendText(textDelta, isReasoningEvent);
             }
 
-            if (!message.content) {
-                delete message.content;
-            }
-
-            if (!message.reasoning_content) {
-                delete message.reasoning_content;
-            }
-
-            if (toolCallsMap.size > 0) {
-                message.tool_calls = Array.from(toolCallsMap.values())
-                    .filter((tc) => tc.id || tc.function?.name)
-                    .map((tc) => tc);
-            }
-
-            return message;
-        }
-
-        function parseLogToConversation(logObj) {
-            const parser = selectParser(logObj);
-            const requestMessages = parser?.parseRequest?.(logObj) || [];
-            const responseMessage = parser?.parseResponse?.(logObj) || { role: "assistant" };
-
-            return {
-                request: {
-                    messages: requestMessages,
+            if (chunk?.type === 'function_call' || currentEvent.includes('tool')) {
+              const toolCall = {
+                id: chunk?.id || chunk?.call_id || '',
+                type: 'function',
+                function: {
+                  name: chunk?.name || '',
+                  arguments: chunk?.arguments || '',
                 },
-                response: {
-                    message: responseMessage,
-                },
-            };
+              };
+
+              if (toolCall.id || toolCall.function.name) {
+                toolCallsMap.set(toolCallsMap.size, toolCall);
+              }
+            }
+          } catch {
+            // ignore
+          }
         }
 
-        // ========== STATE ==========
-        let currentFolderFiles = [];
-        let sessions = []; // Array of { name, files, count, dateRange }
-        let currentSession = null;
-        let filesData = [];
-        let serverMode = false;
+        if (!message.content) {
+          delete message.content;
+        }
 
-        // ========== UI ELEMENTS ==========
-        const screenWelcome = document.getElementById('screen-welcome');
-        const appContainer = document.getElementById('app-container');
-        const folderSelector = document.getElementById('folder-selector');
-        const scanningIndicator = document.getElementById('scanning-indicator');
-        const scanningMsg = document.getElementById('scanning-msg');
-        const sessionListWrapper = document.getElementById('session-list-wrapper');
-        const sessionContainer = document.getElementById('session-selector-container');
-        const selectedPathDiv = document.getElementById('selected-path');
+        if (!message.reasoning_content) {
+          delete message.reasoning_content;
+        }
 
-        const inpFolder = document.getElementById('inp-folder');
-        const btnSelectFolder = document.getElementById('btn-select-folder');
-        const btnChangeFolder = document.getElementById('btn-change-folder');
-        const btnRescan = document.getElementById('btn-rescan');
-        const btnBack = document.getElementById('btn-back');
+        if (toolCallsMap.size > 0) {
+          message.tool_calls = Array.from(toolCallsMap.values())
+            .filter((tc) => tc.id || tc.function?.name)
+            .map((tc) => tc);
+        }
 
-        // ========== INITIALIZATION ==========
-        (async function init() {
-            // Check for server mode
-            try {
-                const resp = await fetch('/api/sessions', { method: 'HEAD' });
-                if (resp.ok) {
-                    serverMode = true;
-                    enableServerMode();
-                } else {
-                    // Determine if we are on localhost but maybe api is down or different path
-                    // For now, if HEAD fails, assume file mode
-                }
-            } catch (e) {
-                // Fetch failed, assume file mode
-            }
-        })();
+        return message;
+      }
 
-        function enableServerMode() {
-            // Update UI for server mode
-            folderSelector.style.display = 'none';
-            btnChangeFolder.style.display = 'none'; // No changing folders in server mode
-            btnRescan.textContent = 'Refresh';
+      function parseLogToConversation(logObj) {
+        const parser = selectParser(logObj);
+        const requestMessages = parser?.parseRequest?.(logObj) || [];
+        const responseMessage = parser?.parseResponse?.(logObj) || { role: 'assistant' };
 
-            document.querySelector('.welcome-subtitle').textContent = 'Viewing sessions from local server';
+        return {
+          request: {
+            messages: requestMessages,
+          },
+          response: {
+            message: responseMessage,
+          },
+        };
+      }
 
-            // Auto-load sessions
-            scanSessions();
+      // ========== STATE ==========
+      let currentFolderFiles = [];
+      let sessions = []; // Array of { name, files, count, dateRange }
+      let currentSession = null;
+      let filesData = [];
+      let serverMode = false;
 
-            // Start polling (2s interval)
-            setInterval(() => {
-                if (document.hidden) return; // Don't poll if tab is background
+      // ========== UI ELEMENTS ==========
+      const screenWelcome = document.getElementById('screen-welcome');
+      const appContainer = document.getElementById('app-container');
+      const folderSelector = document.getElementById('folder-selector');
+      const scanningIndicator = document.getElementById('scanning-indicator');
+      const scanningMsg = document.getElementById('scanning-msg');
+      const sessionListWrapper = document.getElementById('session-list-wrapper');
+      const sessionContainer = document.getElementById('session-selector-container');
+      const selectedPathDiv = document.getElementById('selected-path');
 
-                // If we are in session list view (welcome screen visible)
-                if (!screenWelcome.classList.contains('hidden')) {
-                    scanSessions(true);
-                }
-                // If we are in session details view (app container visible)
-                else if (currentSession && currentSession.name) {
-                    loadSessionFilesFromServer(currentSession.name, true);
-                }
+      const inpFolder = document.getElementById('inp-folder');
+      const btnSelectFolder = document.getElementById('btn-select-folder');
+      const btnChangeFolder = document.getElementById('btn-change-folder');
+      const btnRescan = document.getElementById('btn-rescan');
+      const btnBack = document.getElementById('btn-back');
+
+      // ========== INITIALIZATION ==========
+      (async function init() {
+        // Check for server mode
+        try {
+          const resp = await fetch('/api/sessions', { method: 'HEAD' });
+          if (resp.ok) {
+            serverMode = true;
+            enableServerMode();
+          } else {
+            // Determine if we are on localhost but maybe api is down or different path
+            // For now, if HEAD fails, assume file mode
+          }
+        } catch (e) {
+          // Fetch failed, assume file mode
+        }
+      })();
+
+      function enableServerMode() {
+        // Update UI for server mode
+        folderSelector.style.display = 'none';
+        btnChangeFolder.style.display = 'none'; // No changing folders in server mode
+        btnRescan.textContent = 'Refresh';
+
+        document.querySelector('.welcome-subtitle').textContent = 'Viewing sessions from local server';
+
+        // Auto-load sessions
+        scanSessions();
+
+        // Start polling (2s interval)
+        setInterval(() => {
+          if (document.hidden) return; // Don't poll if tab is background
+
+          // If we are in session list view (welcome screen visible)
+          if (!screenWelcome.classList.contains('hidden')) {
+            scanSessions(true);
+          }
+          // If we are in session details view (app container visible)
+          else if (currentSession && currentSession.name) {
+            loadSessionFilesFromServer(currentSession.name, true);
+          }
+        }, 2000);
+      }
+
+      // ========== EVENT HANDLERS ==========
+      btnSelectFolder.addEventListener('click', () => inpFolder.click());
+      btnChangeFolder.addEventListener('click', () => inpFolder.click());
+      btnRescan.addEventListener('click', () => scanSessions());
+      btnBack.addEventListener('click', () => showWelcomeScreen());
+
+      const btnCopyRaw = document.getElementById('btn-copy-raw');
+      btnCopyRaw.addEventListener('click', () => {
+        const jsonText = document.getElementById('json-viewer').textContent;
+        navigator.clipboard
+          .writeText(jsonText)
+          .then(() => {
+            const originalText = btnCopyRaw.textContent;
+            btnCopyRaw.textContent = 'Copied!';
+            btnCopyRaw.style.color = '#3fb950';
+            setTimeout(() => {
+              btnCopyRaw.textContent = originalText;
+              btnCopyRaw.style.color = '';
             }, 2000);
+          })
+          .catch((err) => {
+            console.error('Failed to copy:', err);
+          });
+      });
+
+      inpFolder.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        currentFolderFiles = files;
+
+        // Try to show the folder name
+        const firstFile = files[0];
+        const pathParts = firstFile.webkitRelativePath.split('/');
+        const folderName = pathParts[0];
+        selectedPathDiv.textContent = `📁 ${folderName}`;
+
+        // Reset input
+        inpFolder.value = '';
+
+        // Show scanning UI
+        folderSelector.style.display = 'none';
+        scanningIndicator.style.display = 'flex';
+        sessionListWrapper.style.display = 'none';
+
+        // Scan for sessions
+        await scanSessions();
+      });
+
+      // ========== SESSION SCANNING ==========
+      async function scanSessions(silent = false) {
+        if (!silent) {
+          scanningIndicator.style.display = 'flex';
+          scanningMsg.textContent = serverMode ? 'Fetching sessions from server...' : 'Scanning for sessions...';
+          sessionListWrapper.style.display = 'none';
         }
 
-        // ========== EVENT HANDLERS ==========
-        btnSelectFolder.addEventListener('click', () => inpFolder.click());
-        btnChangeFolder.addEventListener('click', () => inpFolder.click());
-        btnRescan.addEventListener('click', () => scanSessions());
-        btnBack.addEventListener('click', () => showWelcomeScreen());
+        let fetchedSessions = [];
 
-        const btnCopyRaw = document.getElementById('btn-copy-raw');
-        btnCopyRaw.addEventListener('click', () => {
-            const jsonText = document.getElementById('json-viewer').textContent;
-            navigator.clipboard.writeText(jsonText).then(() => {
-                const originalText = btnCopyRaw.textContent;
-                btnCopyRaw.textContent = 'Copied!';
-                btnCopyRaw.style.color = '#3fb950';
-                setTimeout(() => {
-                    btnCopyRaw.textContent = originalText;
-                    btnCopyRaw.style.color = '';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
+        if (serverMode) {
+          try {
+            const resp = await fetch('/api/sessions');
+            if (!resp.ok) throw new Error('Failed to fetch sessions');
+            const data = await resp.json();
+
+            // Map API data to internal session structure
+            fetchedSessions = data.map((item) => ({
+              name: item.name,
+              count: item.count,
+              timestamps: [new Date(item.mtime)], // Use mtime as the timestamp
+              files: [], // No files yet, will fetch on demand
+            }));
+
+            // Sort sessions by newest timestamp first
+            fetchedSessions.sort((a, b) => {
+              const tA = a.timestamps[0].getTime();
+              const tB = b.timestamps[0].getTime();
+              return tB - tA;
             });
-        });
+          } catch (err) {
+            console.error('Server scan failed:', err);
+            if (!silent) alert('Failed to fetch sessions from server.');
+          }
+        } else {
+          // LOCAL FILE MODE
+          // Group files by session
+          const sessionMap = new Map();
 
-        inpFolder.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
+          for (const file of currentFolderFiles) {
+            const pathParts = file.webkitRelativePath.split('/');
 
-            currentFolderFiles = files;
-
-            // Try to show the folder name
-            const firstFile = files[0];
-            const pathParts = firstFile.webkitRelativePath.split('/');
-            const folderName = pathParts[0];
-            selectedPathDiv.textContent = `📁 ${folderName}`;
-
-            // Reset input
-            inpFolder.value = '';
-
-            // Show scanning UI
-            folderSelector.style.display = 'none';
-            scanningIndicator.style.display = 'flex';
-            sessionListWrapper.style.display = 'none';
-
-            // Scan for sessions
-            await scanSessions();
-        });
-
-        // ========== SESSION SCANNING ==========
-        async function scanSessions(silent = false) {
-            if (!silent) {
-                scanningIndicator.style.display = 'flex';
-                scanningMsg.textContent = serverMode ? "Fetching sessions from server..." : "Scanning for sessions...";
-                sessionListWrapper.style.display = 'none';
+            // Skip non-JSON files and latest.json files
+            if (!file.name.endsWith('.json') || file.name.startsWith('latest')) {
+              continue;
             }
 
-            let fetchedSessions = [];
+            // Find session folder (ses_* only)
+            let sessionName = null;
+            let sessionPath = '';
 
-            if (serverMode) {
-                try {
-                    const resp = await fetch('/api/sessions');
-                    if (!resp.ok) throw new Error('Failed to fetch sessions');
-                    const data = await resp.json();
-
-                    // Map API data to internal session structure
-                    fetchedSessions = data.map(item => ({
-                        name: item.name,
-                        count: item.count,
-                        timestamps: [new Date(item.mtime)], // Use mtime as the timestamp
-                        files: [] // No files yet, will fetch on demand
-                    }));
-
-                    // Sort sessions by newest timestamp first
-                    fetchedSessions.sort((a, b) => {
-                        const tA = a.timestamps[0].getTime();
-                        const tB = b.timestamps[0].getTime();
-                        return tB - tA;
-                    });
-
-                } catch (err) {
-                    console.error("Server scan failed:", err);
-                    if (!silent) alert("Failed to fetch sessions from server.");
-                }
-            } else {
-                // LOCAL FILE MODE
-                // Group files by session
-                const sessionMap = new Map();
-
-                for (const file of currentFolderFiles) {
-                    const pathParts = file.webkitRelativePath.split('/');
-
-                    // Skip non-JSON files and latest.json files
-                    if (!file.name.endsWith('.json') || file.name.startsWith('latest')) {
-                        continue;
-                    }
-
-                    // Find session folder (ses_* only)
-                    let sessionName = null;
-                    let sessionPath = '';
-
-                    for (let i = 0; i < pathParts.length - 1; i++) {
-                        if (pathParts[i].startsWith('ses_')) {
-                            sessionName = pathParts[i];
-                            sessionPath = pathParts.slice(0, i + 1).join('/');
-                            break;
-                        }
-                    }
-
-                    // Only allow ses_ folders
-                    if (!sessionName) continue;
-
-                    if (!sessionMap.has(sessionName)) {
-                        sessionMap.set(sessionName, {
-                            name: sessionName,
-                            path: sessionPath,
-                            files: [],
-                            count: 0,
-                            timestamps: []
-                        });
-                    }
-
-                    sessionMap.get(sessionName).files.push(file);
-                    sessionMap.get(sessionName).count++;
-                }
-
-                // Parse first file of each session to get time range
-                const sessionArray = Array.from(sessionMap.values());
-
-                for (const session of sessionArray) {
-                    // Try to parse timestamps from a few files to estimate range
-                    const sampleFiles = session.files.slice(0, 3);
-                    for (const file of sampleFiles) {
-                        try {
-                            const text = await file.text();
-                            const json = JSON.parse(text);
-                            if (json.metadata?.timestamp) {
-                                session.timestamps.push(new Date(json.metadata.timestamp));
-                            }
-                        } catch (e) { }
-                    }
-                }
-
-                // Sort sessions by newest timestamp first
-                sessionArray.sort((a, b) => {
-                    const tA = a.timestamps.length > 0 ? Math.max(...a.timestamps) : 0;
-                    const tB = b.timestamps.length > 0 ? Math.max(...b.timestamps) : 0;
-                    return tB - tA;
-                });
-
-                fetchedSessions = sessionArray;
+            for (let i = 0; i < pathParts.length - 1; i++) {
+              if (pathParts[i].startsWith('ses_')) {
+                sessionName = pathParts[i];
+                sessionPath = pathParts.slice(0, i + 1).join('/');
+                break;
+              }
             }
 
-            sessions = fetchedSessions;
+            // Only allow ses_ folders
+            if (!sessionName) continue;
 
-            // Update UI
-            if (!silent) {
-                scanningIndicator.style.display = 'none';
-                sessionListWrapper.style.display = 'block';
+            if (!sessionMap.has(sessionName)) {
+              sessionMap.set(sessionName, {
+                name: sessionName,
+                path: sessionPath,
+                files: [],
+                count: 0,
+                timestamps: [],
+              });
             }
-            renderSessionList();
+
+            sessionMap.get(sessionName).files.push(file);
+            sessionMap.get(sessionName).count++;
+          }
+
+          // Parse first file of each session to get time range
+          const sessionArray = Array.from(sessionMap.values());
+
+          for (const session of sessionArray) {
+            // Try to parse timestamps from a few files to estimate range
+            const sampleFiles = session.files.slice(0, 3);
+            for (const file of sampleFiles) {
+              try {
+                const text = await file.text();
+                const json = JSON.parse(text);
+                if (json.metadata?.timestamp) {
+                  session.timestamps.push(new Date(json.metadata.timestamp));
+                }
+              } catch (e) {}
+            }
+          }
+
+          // Sort sessions by newest timestamp first
+          sessionArray.sort((a, b) => {
+            const tA = a.timestamps.length > 0 ? Math.max(...a.timestamps) : 0;
+            const tB = b.timestamps.length > 0 ? Math.max(...b.timestamps) : 0;
+            return tB - tA;
+          });
+
+          fetchedSessions = sessionArray;
         }
 
-        function renderSessionList() {
-            sessionContainer.innerHTML = '';
+        sessions = fetchedSessions;
 
-            if (sessions.length === 0) {
-                sessionContainer.innerHTML = `
+        // Update UI
+        if (!silent) {
+          scanningIndicator.style.display = 'none';
+          sessionListWrapper.style.display = 'block';
+        }
+        renderSessionList();
+      }
+
+      function renderSessionList() {
+        sessionContainer.innerHTML = '';
+
+        if (sessions.length === 0) {
+          sessionContainer.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: var(--text-secondary);">
                     ${serverMode ? 'No sessions returned from server.' : 'No sessions found. Make sure to select a folder containing OpenCode debug logs.'}<br><br>
                     ${serverMode ? '' : '<span style="font-size: 12px; opacity: 0.7;">Expected structure: folder/ses_*/001.json or folder/YYYY-MM-DD/001.json</span>'}
                 </div>
             `;
-                return;
+          return;
+        }
+
+        sessions.forEach((session, index) => {
+          const div = document.createElement('div');
+          div.className = 'session-item';
+
+          // Format time range
+          let timeInfo = '';
+          if (session.timestamps.length > 0) {
+            const minTime = new Date(Math.min(...session.timestamps));
+            const maxTime = new Date(Math.max(...session.timestamps));
+            const sameDay = minTime.toDateString() === maxTime.toDateString();
+
+            if (sameDay) {
+              // For server mode, we only have one timestamp usually, so just show that
+              if (serverMode || minTime.getTime() === maxTime.getTime()) {
+                timeInfo = `${minTime.toLocaleDateString()} ${minTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+              } else {
+                timeInfo = `${minTime.toLocaleDateString()} ${minTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${maxTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+              }
+            } else {
+              timeInfo = `${minTime.toLocaleDateString()} - ${maxTime.toLocaleDateString()}`;
             }
+          }
 
-            sessions.forEach((session, index) => {
-                const div = document.createElement('div');
-                div.className = 'session-item';
-
-                // Format time range
-                let timeInfo = '';
-                if (session.timestamps.length > 0) {
-                    const minTime = new Date(Math.min(...session.timestamps));
-                    const maxTime = new Date(Math.max(...session.timestamps));
-                    const sameDay = minTime.toDateString() === maxTime.toDateString();
-
-                    if (sameDay) {
-                        // For server mode, we only have one timestamp usually, so just show that
-                        if (serverMode || minTime.getTime() === maxTime.getTime()) {
-                            timeInfo = `${minTime.toLocaleDateString()} ${minTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                        } else {
-                            timeInfo = `${minTime.toLocaleDateString()} ${minTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${maxTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                        }
-                    } else {
-                        timeInfo = `${minTime.toLocaleDateString()} - ${maxTime.toLocaleDateString()}`;
-                    }
-                }
-
-                div.innerHTML = `
+          div.innerHTML = `
                 <div>
                     <div class="session-name">${escapeHtml(session.name)}</div>
                     <div class="session-meta">${session.count} requests${timeInfo ? ' · ' + timeInfo : ''}</div>
@@ -1370,747 +1371,773 @@
                 <div class="session-count">${session.count}</div>
             `;
 
-                div.onclick = () => loadSession(index);
-                sessionContainer.appendChild(div);
-            });
+          div.onclick = () => loadSession(index);
+          sessionContainer.appendChild(div);
+        });
+      }
+
+      // ========== SESSION LOADING ==========
+      async function loadSession(sessionIndex) {
+        const session = sessions[sessionIndex];
+        if (!session) return;
+
+        currentSession = session;
+
+        // Update session header
+        document.getElementById('session-header-name').textContent = session.name;
+        document.getElementById('session-header-meta').textContent = `${session.count} requests`;
+
+        // Show app, hide welcome
+        screenWelcome.classList.add('hidden');
+        appContainer.classList.add('visible');
+
+        // Load files
+        if (serverMode) {
+          await loadSessionFilesFromServer(session.name);
+        } else {
+          await loadSessionFiles(session.files);
+        }
+      }
+
+      async function loadSessionFilesFromServer(sessionName, silent = false) {
+        if (!silent) {
+          filesData = [];
+          const fileListEl = document.getElementById('file-list');
+          fileListEl.innerHTML = '<li style="padding:10px; color:var(--text-secondary)">Fetching files...</li>';
         }
 
-        // ========== SESSION LOADING ==========
-        async function loadSession(sessionIndex) {
-            const session = sessions[sessionIndex];
-            if (!session) return;
+        try {
+          const resp = await fetch(`/api/session/${sessionName}`);
+          if (!resp.ok) throw new Error('Failed to load session files');
+          const data = await resp.json();
 
-            currentSession = session;
+          // Map to internal filesData structure
+          filesData = data.map((item) => ({
+            name: item.name,
+            data: item.data, // The JSON content is already in 'data' property
+          }));
 
-            // Update session header
-            document.getElementById('session-header-name').textContent = session.name;
-            document.getElementById('session-header-meta').textContent = `${session.count} requests`;
+          processLoadedFiles(silent);
+        } catch (err) {
+          console.error('Load session error:', err);
+          if (!silent) {
+            const fileListEl = document.getElementById('file-list');
+            fileListEl.innerHTML =
+              '<li style="padding:10px; color:var(--accent-red)">Error loading session files.</li>';
+          }
+        }
+      }
 
-            // Show app, hide welcome
-            screenWelcome.classList.add('hidden');
-            appContainer.classList.add('visible');
+      async function loadSessionFiles(files) {
+        filesData = [];
+        const fileListEl = document.getElementById('file-list');
+        fileListEl.innerHTML = '<li style="padding:10px; color:var(--text-secondary)">Loading...</li>';
 
-            // Load files
-            if (serverMode) {
-                await loadSessionFilesFromServer(session.name);
-            } else {
-                await loadSessionFiles(session.files);
-            }
+        const validFiles = files.filter((f) => f.name.endsWith('.json') && !f.name.startsWith('latest'));
+
+        // Process in chunks
+        const chunk = 50;
+        for (let i = 0; i < validFiles.length; i += chunk) {
+          const slice = validFiles.slice(i, i + chunk);
+          await Promise.all(slice.map(readAndParse));
+          if (i + chunk < validFiles.length) await new Promise((r) => setTimeout(r, 0));
         }
 
-        async function loadSessionFilesFromServer(sessionName, silent = false) {
-            if (!silent) {
-                filesData = [];
-                const fileListEl = document.getElementById('file-list');
-                fileListEl.innerHTML = '<li style="padding:10px; color:var(--text-secondary)">Fetching files...</li>';
-            }
+        processLoadedFiles();
+      }
 
+      function processLoadedFiles(silent = false) {
+        // Sort by TIMESTAMP (Newest First)
+        filesData.sort((a, b) => {
+          const tA = new Date(a.data.metadata?.timestamp || 0).getTime();
+          const tB = new Date(b.data.metadata?.timestamp || 0).getTime();
+          return tB - tA;
+        });
+
+        renderFileList(silent);
+        updateStats();
+      }
+
+      function readAndParse(file) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
             try {
-                const resp = await fetch(`/api/session/${sessionName}`);
-                if (!resp.ok) throw new Error("Failed to load session files");
-                const data = await resp.json();
-
-                // Map to internal filesData structure
-                filesData = data.map(item => ({
-                    name: item.name,
-                    data: item.data // The JSON content is already in 'data' property
-                }));
-
-                processLoadedFiles(silent);
-
+              const json = JSON.parse(e.target.result);
+              if (json.metadata && json.request && json.response) {
+                filesData.push({ name: file.name, data: json });
+              }
             } catch (err) {
-                console.error("Load session error:", err);
-                if (!silent) {
-                    const fileListEl = document.getElementById('file-list');
-                    fileListEl.innerHTML = '<li style="padding:10px; color:var(--accent-red)">Error loading session files.</li>';
-                }
+              console.error('Failed to parse', file.name);
             }
+            resolve();
+          };
+          reader.readAsText(file);
+        });
+      }
+
+      function showWelcomeScreen() {
+        screenWelcome.classList.remove('hidden');
+        appContainer.classList.remove('visible');
+
+        // Reset views
+        if (sessions.length > 0) {
+          // Changed condition to check sessions length for server mode support
+          if (serverMode) {
+            folderSelector.style.display = 'none';
+          } else {
+            // In file mode, show selector if we want to change, but if we have sessions we show list
+            // But wait, the original code had: if (currentFolderFiles.length > 0) ...
+            // Let's stick to the behavior: if we have scanned sessions, show the list
+          }
+
+          scanningIndicator.style.display = 'none';
+          sessionListWrapper.style.display = 'block';
+        }
+      }
+
+      // ========== RENDERING ==========
+      function renderFileList(silent = false) {
+        const fileListEl = document.getElementById('file-list');
+
+        let activeFileName = null;
+        if (silent) {
+          const activeEl = fileListEl.querySelector('.file-item.active');
+          if (activeEl) activeFileName = activeEl.getAttribute('data-filename');
         }
 
-        async function loadSessionFiles(files) {
-            filesData = [];
-            const fileListEl = document.getElementById('file-list');
-            fileListEl.innerHTML = '<li style="padding:10px; color:var(--text-secondary)">Loading...</li>';
+        fileListEl.innerHTML = '';
 
-            const validFiles = files.filter(f =>
-                f.name.endsWith('.json') &&
-                !f.name.startsWith('latest')
-            );
-
-            // Process in chunks
-            const chunk = 50;
-            for (let i = 0; i < validFiles.length; i += chunk) {
-                const slice = validFiles.slice(i, i + chunk);
-                await Promise.all(slice.map(readAndParse));
-                if (i + chunk < validFiles.length) await new Promise(r => setTimeout(r, 0));
-            }
-
-            processLoadedFiles();
+        if (filesData.length === 0) {
+          fileListEl.innerHTML =
+            '<li style="padding:20px; text-align:center; color:var(--text-secondary)">No valid logs found</li>';
+          return;
         }
 
-        function processLoadedFiles(silent = false) {
-            // Sort by TIMESTAMP (Newest First)
-            filesData.sort((a, b) => {
-                const tA = new Date(a.data.metadata?.timestamp || 0).getTime();
-                const tB = new Date(b.data.metadata?.timestamp || 0).getTime();
-                return tB - tA;
-            });
+        filesData.forEach((file, index) => {
+          const li = document.createElement('li');
+          li.className = 'file-item';
+          if (file.name === activeFileName) li.classList.add('active');
+          li.setAttribute('data-filename', file.name);
 
-            renderFileList(silent);
-            updateStats();
-        }
+          const meta = file.data.metadata;
+          const statusClass =
+            file.data.response.status >= 200 && file.data.response.status < 300 ? 'status-200' : 'status-error';
 
-        function readAndParse(file) {
-            return new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const json = JSON.parse(e.target.result);
-                        if (json.metadata && json.request && json.response) {
-                            filesData.push({ name: file.name, data: json });
-                        }
-                    } catch (err) {
-                        console.error("Failed to parse", file.name);
-                    }
-                    resolve();
-                };
-                reader.readAsText(file);
-            });
-        }
+          const date = new Date(meta.timestamp);
+          const timeStr = date.toLocaleTimeString([], {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
 
-        function showWelcomeScreen() {
-            screenWelcome.classList.remove('hidden');
-            appContainer.classList.remove('visible');
-
-            // Reset views
-            if (sessions.length > 0) { // Changed condition to check sessions length for server mode support
-                if (serverMode) {
-                    folderSelector.style.display = 'none';
-                } else {
-                    // In file mode, show selector if we want to change, but if we have sessions we show list
-                    // But wait, the original code had: if (currentFolderFiles.length > 0) ...
-                    // Let's stick to the behavior: if we have scanned sessions, show the list
-                }
-
-                scanningIndicator.style.display = 'none';
-                sessionListWrapper.style.display = 'block';
-            }
-        }
-
-        // ========== RENDERING ==========
-        function renderFileList(silent = false) {
-            const fileListEl = document.getElementById('file-list');
-
-            let activeFileName = null;
-            if (silent) {
-                const activeEl = fileListEl.querySelector('.file-item.active');
-                if (activeEl) activeFileName = activeEl.getAttribute('data-filename');
-            }
-
-            fileListEl.innerHTML = '';
-
-            if (filesData.length === 0) {
-                fileListEl.innerHTML = '<li style="padding:20px; text-align:center; color:var(--text-secondary)">No valid logs found</li>';
-                return;
-            }
-
-            filesData.forEach((file, index) => {
-                const li = document.createElement('li');
-                li.className = 'file-item';
-                if (file.name === activeFileName) li.classList.add('active');
-                li.setAttribute('data-filename', file.name);
-
-                const meta = file.data.metadata;
-                const statusClass = (file.data.response.status >= 200 && file.data.response.status < 300)
-                    ? 'status-200' : 'status-error';
-
-                const date = new Date(meta.timestamp);
-                const timeStr = date.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                li.innerHTML = `
+          li.innerHTML = `
                 <div class="file-meta">
                     <span class="file-id">#${meta.id} <span style="color:var(--text-secondary); font-weight:normal; margin-left:5px">${timeStr}</span></span>
                     <span style="font-size:11px; opacity:0.7;">${meta.responseType} · ${formatDuration(meta.durationMs)}</span>
                 </div>
                 <div class="file-status ${statusClass}">${file.data.response.status}</div>
             `;
-                li.onclick = () => selectFile(index);
-                fileListEl.appendChild(li);
-            });
+          li.onclick = () => selectFile(index);
+          fileListEl.appendChild(li);
+        });
+      }
+
+      function formatDuration(ms) {
+        if (!ms) return '-';
+        return ms > 1000 ? (ms / 1000).toFixed(1) + 's' : ms + 'ms';
+      }
+
+      function selectFile(index) {
+        for (const el of document.querySelectorAll('.file-item')) {
+          el.classList.remove('active');
+        }
+        document.querySelectorAll('.file-item')[index].classList.add('active');
+
+        const data = filesData[index].data;
+
+        document.getElementById('empty-state').style.display = 'none';
+        document.getElementById('content-area').style.display = 'flex';
+
+        document.getElementById('req-url').textContent = `${data.metadata.method} ${data.metadata.url}`;
+        document.getElementById('req-time').textContent = new Date(data.metadata.timestamp).toLocaleString();
+        document.getElementById('req-duration').textContent = `${data.metadata.durationMs}ms`;
+        document.getElementById('req-type').textContent = data.metadata.responseType;
+
+        document.getElementById('json-viewer').textContent = JSON.stringify(data, null, 2);
+        renderRequestParams(data);
+        renderTools(data);
+        renderMetadata(data);
+        renderConversation(data);
+      }
+
+      function renderRequestParams(data) {
+        const container = document.getElementById('request-params');
+        container.innerHTML = '';
+
+        const body = data?.request?.body;
+        if (!body) return;
+
+        const params = [];
+        if (body.model) params.push({ label: 'model', value: body.model });
+        if (body.temperature !== undefined) params.push({ label: 'temperature', value: body.temperature });
+        if (body.reasoning_effort) params.push({ label: 'reasoning_effort', value: body.reasoning_effort });
+        if (body.max_tokens) params.push({ label: 'max_tokens', value: body.max_tokens });
+        if (body.top_p) params.push({ label: 'top_p', value: body.top_p });
+        if (body.stream !== undefined) params.push({ label: 'stream', value: body.stream });
+
+        if (params.length === 0) return;
+
+        params.forEach((param) => {
+          const item = document.createElement('div');
+          item.className = 'param-item';
+
+          const labelSpan = document.createElement('span');
+          labelSpan.className = 'param-label';
+          labelSpan.textContent = param.label + ':';
+
+          const valueSpan = document.createElement('span');
+          valueSpan.className = 'param-value';
+          valueSpan.textContent = param.value;
+
+          item.appendChild(labelSpan);
+          item.appendChild(valueSpan);
+          container.appendChild(item);
+        });
+      }
+
+      function renderMetadata(data) {
+        const table = document.getElementById('meta-table');
+        table.innerHTML = '';
+
+        const addRow = (k, v) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<th>${k}</th><td>${v}</td>`;
+          table.appendChild(tr);
+        };
+
+        const flatMeta = { ...data.metadata };
+        for (const [k, v] of Object.entries(flatMeta)) {
+          addRow(k, v);
+        }
+      }
+
+      function renderTools(data) {
+        const container = document.getElementById('tools-container');
+        container.innerHTML = '';
+
+        const tools = data?.request?.body?.tools;
+        if (!tools || !Array.isArray(tools) || tools.length === 0) {
+          container.innerHTML =
+            '<div style="color: var(--text-secondary); padding: 20px;">No tools available for this request</div>';
+          return;
         }
 
-        function formatDuration(ms) {
-            if (!ms) return '-';
-            return ms > 1000 ? (ms / 1000).toFixed(1) + 's' : ms + 'ms';
-        }
+        const toolKeyConfig = {
+          type: { title: 'Type', className: 'meta-box' },
+          description: { title: 'Description', className: 'content-box' },
+          parameters: { title: 'Parameters', className: 'code-box' },
+          name: { title: 'Name', className: 'meta-box' },
+        };
+        const toolDisplayOrder = ['type', 'name', 'description', 'parameters'];
 
-        function selectFile(index) {
-            for (const el of document.querySelectorAll('.file-item')) {
-                el.classList.remove('active');
+        tools.forEach((tool, index) => {
+          const div = document.createElement('div');
+          div.className = 'message role-tool';
+
+          const roleDiv = document.createElement('div');
+          roleDiv.className = 'message-role';
+          roleDiv.textContent = tool.function?.name || `tool_${index}`;
+          div.appendChild(roleDiv);
+
+          const keys = Object.keys(tool).filter((k) => k !== 'function');
+          if (tool.function) {
+            keys.push('function');
+          }
+
+          keys.sort((a, b) => {
+            const idxA = toolDisplayOrder.indexOf(a);
+            const idxB = toolDisplayOrder.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+          });
+
+          for (const key of keys) {
+            let val = tool[key];
+            if (key === 'function' && val) {
+              val = {
+                name: val.name,
+                description: val.description,
+                parameters: val.parameters,
+              };
             }
-            document.querySelectorAll('.file-item')[index].classList.add('active');
-
-            const data = filesData[index].data;
-
-            document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('content-area').style.display = 'flex';
-
-            document.getElementById('req-url').textContent = `${data.metadata.method} ${data.metadata.url}`;
-            document.getElementById('req-time').textContent = new Date(data.metadata.timestamp).toLocaleString();
-            document.getElementById('req-duration').textContent = `${data.metadata.durationMs}ms`;
-            document.getElementById('req-type').textContent = data.metadata.responseType;
-
-            document.getElementById('json-viewer').textContent = JSON.stringify(data, null, 2);
-            renderRequestParams(data);
-            renderTools(data);
-            renderMetadata(data);
-            renderConversation(data);
-        }
-
-        function renderRequestParams(data) {
-            const container = document.getElementById('request-params');
-            container.innerHTML = '';
-
-            const body = data?.request?.body;
-            if (!body) return;
-
-            const params = [];
-            if (body.model) params.push({ label: 'model', value: body.model });
-            if (body.temperature !== undefined) params.push({ label: 'temperature', value: body.temperature });
-            if (body.reasoning_effort) params.push({ label: 'reasoning_effort', value: body.reasoning_effort });
-            if (body.max_tokens) params.push({ label: 'max_tokens', value: body.max_tokens });
-            if (body.top_p) params.push({ label: 'top_p', value: body.top_p });
-            if (body.stream !== undefined) params.push({ label: 'stream', value: body.stream });
-
-            if (params.length === 0) return;
-
-            params.forEach(param => {
-                const item = document.createElement('div');
-                item.className = 'param-item';
-
-                const labelSpan = document.createElement('span');
-                labelSpan.className = 'param-label';
-                labelSpan.textContent = param.label + ':';
-
-                const valueSpan = document.createElement('span');
-                valueSpan.className = 'param-value';
-                valueSpan.textContent = param.value;
-
-                item.appendChild(labelSpan);
-                item.appendChild(valueSpan);
-                container.appendChild(item);
-            });
-        }
-
-        function renderMetadata(data) {
-            const table = document.getElementById('meta-table');
-            table.innerHTML = '';
-
-            const addRow = (k, v) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<th>${k}</th><td>${v}</td>`;
-                table.appendChild(tr);
-            };
-
-            const flatMeta = { ...data.metadata };
-            for (const [k, v] of Object.entries(flatMeta)) {
-                addRow(k, v);
-            }
-        }
-
-        function renderTools(data) {
-            const container = document.getElementById('tools-container');
-            container.innerHTML = '';
-
-            const tools = data?.request?.body?.tools;
-            if (!tools || !Array.isArray(tools) || tools.length === 0) {
-                container.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">No tools available for this request</div>';
-                return;
-            }
-
-            const toolKeyConfig = {
-                'type': { title: 'Type', className: 'meta-box' },
-                'description': { title: 'Description', className: 'content-box' },
-                'parameters': { title: 'Parameters', className: 'code-box' },
-                'name': { title: 'Name', className: 'meta-box' }
-            };
-            const toolDisplayOrder = ['type', 'name', 'description', 'parameters'];
-
-            tools.forEach((tool, index) => {
-                const div = document.createElement('div');
-                div.className = 'message role-tool';
-
-                const roleDiv = document.createElement('div');
-                roleDiv.className = 'message-role';
-                roleDiv.textContent = tool.function?.name || `tool_${index}`;
-                div.appendChild(roleDiv);
-
-                const keys = Object.keys(tool).filter(k => k !== 'function');
-                if (tool.function) {
-                    keys.push('function');
-                }
-
-                keys.sort((a, b) => {
-                    const idxA = toolDisplayOrder.indexOf(a);
-                    const idxB = toolDisplayOrder.indexOf(b);
-                    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                    if (idxA !== -1) return -1;
-                    if (idxB !== -1) return 1;
-                    return a.localeCompare(b);
-                });
-
-                for (const key of keys) {
-                    let val = tool[key];
-                    if (key === 'function' && val) {
-                        val = { 
-                            name: val.name, 
-                            description: val.description, 
-                            parameters: val.parameters 
-                        };
-                    }
-                    if (val === undefined || val === null) continue;
-                    if (typeof val === 'object' && Object.keys(val).length === 0) continue;
-                    if (typeof val === 'string' && val.trim() === '') continue;
-
-                    const config = toolKeyConfig[key] || {};
-                    const title = config.title || key;
-                    let className = config.className || 'generic-box';
-
-                    let rawContent = val;
-                    let displayContent;
-                    let isHtml = false;
-
-                    if (key === 'parameters' && typeof val === 'object') {
-                        try {
-                            rawContent = JSON.stringify(val, null, 2);
-                            displayContent = highlightSyntax(rawContent);
-                            isHtml = true;
-                        } catch (e) {
-                            displayContent = JSON.stringify(val, null, 2);
-                        }
-                    } else if (typeof val === 'object') {
-                        try {
-                            rawContent = JSON.stringify(val, null, 2);
-                            displayContent = rawContent;
-                        } catch (e) {
-                            displayContent = String(val);
-                        }
-                    } else {
-                        displayContent = String(val);
-                    }
-
-                    if (!isHtml) {
-                        displayContent = escapeHtml(displayContent);
-                    }
-
-                    const subBox = document.createElement('div');
-                    subBox.className = `sub-box ${className}`;
-
-                    const headerDiv = document.createElement('div');
-                    headerDiv.className = 'sub-box-header';
-                    headerDiv.textContent = title;
-                    subBox.appendChild(headerDiv);
-
-                    const contentDiv = document.createElement('div');
-                    contentDiv.className = 'sub-box-content';
-                    contentDiv.innerHTML = displayContent;
-                    subBox.appendChild(contentDiv);
-
-                    div.appendChild(subBox);
-                }
-
-                container.appendChild(div);
-            });
-        }
-
-        function renderConversation(data) {
-            const container = document.getElementById('panel-conversation');
-            container.innerHTML = '';
-
-            // Use the parser to get clean conversation structure
-            const conversation = parseLogToConversation(data);
-
-            // Configuration for known fields - defines Titles and specific Formatters
-            const keyConfig = {
-                'reasoning_content': { title: 'Reasoning', className: 'reasoning-box' },
-                'content': { title: 'Content', className: 'content-box' },
-                'tool_calls': { title: 'Tool Calls', className: 'tool-calls-box', formatter: formatToolCalls },
-                'tool_call_id': { title: 'Tool Call ID', className: 'meta-box' },
-                'output': { title: 'Output', className: 'output-box', formatter: (val) => typeof val === 'string' ? val : JSON.stringify(val, null, 2) },
-                'arguments': { title: 'Arguments', className: 'code-box', formatter: formatToolArguments },
-                'name': { title: 'Name', className: 'meta-box' },
-                'function': { title: 'Function', className: 'code-box', formatter: (val) => JSON.stringify(val, null, 2) },
-                'call_id': { title: 'Call ID', className: 'meta-box' },
-                'id': { title: 'ID', className: 'meta-box' }
-            };
-
-            // Order of display for known fields
-            const displayOrder = ['reasoning_content', 'content', 'tool_calls', 'output', 'tool_call_id', 'call_id', 'name', 'arguments', 'function', 'id'];
-
-            // Helper: Copy to Clipboard
-            const copyToClipboard = (text, btn) => {
-                if (!text) return;
-                navigator.clipboard.writeText(text).then(() => {
-                    const originalText = btn.textContent;
-                    btn.textContent = 'Copied!';
-                    btn.style.color = '#3fb950';
-                    btn.style.borderColor = '#3fb950';
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.style.color = '';
-                        btn.style.borderColor = '';
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy:', err);
-                });
-            };
-
-            // Helper: Syntax Highlighting for JSON
-            const highlightSyntax = (jsonStr) => {
-                if (!jsonStr) return '';
-                // Only process strings that look like JSON objects or arrays
-                const trimmed = jsonStr.trim();
-                if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
-                    // Try to catch raw JSON values but avoid highlighting random text
-                    return escapeHtml(jsonStr);
-                }
-
-                // Simple regex-based highlighter (escapes HTML first to be safe, but we need to run regex on raw string then wrap matches)
-                // Actually, safer to run on raw string and then wrap.
-
-                // Let's rely on a simpler approach: regex replace on the string, but careful about HTML injection.
-                // Since we are generating HTML spans, we need to be careful.
-
-                // Strategy: Tokenize and escape values.
-                return jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-                    let cls = 'hljs-number';
-                    if (/^"/.test(match)) {
-                        if (/:$/.test(match)) {
-                            cls = 'hljs-key';
-                            // Remove colon for class application, or keep it?
-                            // match is like "key": 
-                            // We want <span class="key">"key"</span>:
-                            return '<span class="' + cls + '">' + escapeHtml(match.slice(0, -1)) + '</span>:';
-                        } else {
-                            cls = 'hljs-string';
-                            return '<span class="' + cls + '">' + escapeHtml(match) + '</span>';
-                        }
-                    } else if (/true|false/.test(match)) {
-                        cls = 'hljs-boolean';
-                    } else if (/null/.test(match)) {
-                        cls = 'hljs-null';
-                    }
-                    return '<span class="' + cls + '">' + match + '</span>';
-                });
-            };
-
-            // Helper function to render a single message
-            const renderMsg = (msg) => {
-                const div = document.createElement('div');
-                const roleClass = msg.role ? `role-${msg.role}` : 'role-unknown';
-                div.className = `message ${roleClass}`;
-
-                const roleLabel = msg.role || msg.type || 'unknown';
-
-                // 1. Role Title
-                const roleDiv = document.createElement('div');
-                roleDiv.className = 'message-role';
-                roleDiv.textContent = roleLabel;
-                div.appendChild(roleDiv);
-
-                // Collect keys to render (Skip role/type as they are the header)
-                const keys = Object.keys(msg).filter(k => k !== 'role' && k !== 'type');
-
-                // Sort keys: Known fields in displayOrder, then others alphabetically
-                keys.sort((a, b) => {
-                    const idxA = displayOrder.indexOf(a);
-                    const idxB = displayOrder.indexOf(b);
-                    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                    if (idxA !== -1) return -1;
-                    if (idxB !== -1) return 1;
-                    return a.localeCompare(b);
-                });
-
-                let hasContent = false;
-
-                // 2. Render Keys as Sub-Boxes
-                for (const key of keys) {
-                    const val = msg[key];
-                    if (val === undefined || val === null) continue;
-                    if (Array.isArray(val) && val.length === 0) continue;
-                    if (typeof val === 'string' && val.trim() === '') continue;
-
-                    hasContent = true;
-
-                    const config = keyConfig[key] || {};
-                    const title = config.title || key; // Default to key name
-                    const className = config.className || 'generic-box';
-                    const formatter = config.formatter || ((v) => typeof v === 'string' ? v : JSON.stringify(v, null, 2));
-
-                    // Determine content string for copy
-                    let rawContent = val;
-                    if (typeof rawContent !== 'string') {
-                        try { rawContent = JSON.stringify(rawContent, null, 2); } catch (e) { }
-                    }
-
-                    let displayContent = formatter(val);
-                    let isHtml = false;
-
-                    // Apply syntax highlighting
-                    if (className === 'tool-calls-box' || className === 'code-box' || className === 'output-box') {
-                        if (typeof displayContent === 'string' && (displayContent.trim().startsWith('{') || displayContent.trim().startsWith('['))) {
-                            displayContent = highlightSyntax(displayContent);
-                            isHtml = true;
-                        }
-                    }
-
-                    // Fallback escape if not highlighting
-                    if (!isHtml) {
-                        displayContent = escapeHtml(displayContent);
-                    }
-
-                    const subBox = document.createElement('div');
-                    subBox.className = `sub-box ${className}`;
-
-                    // Create Header with Copy Button
-                    const headerDiv = document.createElement('div');
-                    headerDiv.className = 'sub-box-header';
-
-                    const titleSpan = document.createElement('span');
-                    titleSpan.textContent = title;
-                    headerDiv.appendChild(titleSpan);
-
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'btn-copy';
-                    copyBtn.textContent = 'Copy';
-                    copyBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        copyToClipboard(rawContent, copyBtn);
-                    };
-                    headerDiv.appendChild(copyBtn);
-
-                    const contentDiv = document.createElement('div');
-                    contentDiv.className = 'sub-box-content';
-                    contentDiv.innerHTML = displayContent;
-
-                    subBox.appendChild(headerDiv);
-                    subBox.appendChild(contentDiv);
-                    div.appendChild(subBox);
-                }
-
-                // 3. Empty State
-                if (!hasContent) {
-                    const empty = document.createElement('div');
-                    empty.className = 'message-content';
-                    empty.style.color = 'var(--text-secondary)';
-                    empty.style.fontStyle = 'italic';
-                    empty.textContent = '(empty)';
-                    div.appendChild(empty);
-                }
-
-                container.appendChild(div);
-            };
-
-            // Display all messages from request
-            for (const msg of conversation.request.messages) {
-                renderMsg(msg);
-            }
-
-            // Display response message
-            const responseMsg = conversation.response.message;
-            if (responseMsg) {
-                renderMsg(responseMsg);
-            }
-        }
-
-        function formatToolCalls(toolCalls) {
-            // Display raw JSON for tool_calls without further parsing
-            return JSON.stringify(toolCalls, null, 2);
-        }
-
-        function createDetailsElement(title, content, expanded) {
-            const details = document.createElement('details');
-            if (expanded) details.open = true;
-
-            const summary = document.createElement('summary');
-            summary.textContent = title;
-            details.appendChild(summary);
-
-            if (content instanceof HTMLElement) {
-                details.appendChild(content);
+            if (val === undefined || val === null) continue;
+            if (typeof val === 'object' && Object.keys(val).length === 0) continue;
+            if (typeof val === 'string' && val.trim() === '') continue;
+
+            const config = toolKeyConfig[key] || {};
+            const title = config.title || key;
+            let className = config.className || 'generic-box';
+
+            let rawContent = val;
+            let displayContent;
+            let isHtml = false;
+
+            if (key === 'parameters' && typeof val === 'object') {
+              try {
+                rawContent = JSON.stringify(val, null, 2);
+                displayContent = highlightSyntax(rawContent);
+                isHtml = true;
+              } catch (e) {
+                displayContent = JSON.stringify(val, null, 2);
+              }
+            } else if (typeof val === 'object') {
+              try {
+                rawContent = JSON.stringify(val, null, 2);
+                displayContent = rawContent;
+              } catch (e) {
+                displayContent = String(val);
+              }
             } else {
-                const pre = document.createElement('pre');
-                pre.textContent = content;
-                details.appendChild(pre);
+              displayContent = String(val);
             }
 
-            return details;
-        }
-
-        function renderGenericFields(obj, opts) {
-            if (!obj || typeof obj !== 'object') return null;
-
-            const { collapsedFields, expandedFields } = opts;
-            const wrapper = document.createElement('div');
-            let hasContent = false;
-
-            for (const [key, value] of Object.entries(obj)) {
-                const label = `${key}`;
-                const shouldExpand = expandedFields.has(key);
-                const shouldCollapse = collapsedFields.has(key);
-
-                if (value === null || value === undefined) continue;
-
-                hasContent = true;
-
-                if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-                    const row = document.createElement('div');
-                    row.className = 'kv-row';
-                    row.textContent = `${label}: ${value}`;
-                    wrapper.appendChild(row);
-                    continue;
-                }
-
-                let content;
-                try {
-                    content = JSON.stringify(value, null, 2);
-                } catch (e) {
-                    content = String(value);
-                }
-
-                const details = createDetailsElement(label, content, shouldExpand && !shouldCollapse);
-                wrapper.appendChild(details);
+            if (!isHtml) {
+              displayContent = escapeHtml(displayContent);
             }
 
-            return hasContent ? wrapper : null;
-        }
+            const subBox = document.createElement('div');
+            subBox.className = `sub-box ${className}`;
 
-        function formatToolArguments(args) {
-            if (args === undefined || args === null) return '(no arguments)';
-            if (typeof args !== 'string') {
-                try {
-                    return JSON.stringify(args, null, 2);
-                } catch (e) {
-                    return String(args);
-                }
-            }
-            if (args.trim() === '') return '(no arguments)';
-            try {
-                return JSON.stringify(JSON.parse(args), null, 2);
-            } catch (e) {
-                return args;
-            }
-        }
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'sub-box-header';
+            headerDiv.textContent = title;
+            subBox.appendChild(headerDiv);
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'sub-box-content';
+            contentDiv.innerHTML = displayContent;
+            subBox.appendChild(contentDiv);
 
-        // ========== Protocol Parsers ==========
+            div.appendChild(subBox);
+          }
 
-        const chatCompletionsParser = {
-            id: "chat-completions",
-            match: (url) => typeof url === "string" && url.endsWith("/chat/completions"),
-            parseRequest: (logObj) => parseRequestMessages(logObj?.request?.body?.messages || []),
-            parseResponse: (logObj) => {
-                if (
-                    logObj?.response?.body?.type === "sse-stream" &&
-                    Array.isArray(logObj.response.body.preview)
-                ) {
-                    return parseSSEStreamToMessage(logObj.response.body.preview);
-                }
+          container.appendChild(div);
+        });
+      }
 
-                if (logObj?.response?.body?.choices?.[0]?.message) {
-                    const msg = logObj.response.body.choices[0].message;
-                    return {
-                        role: msg.role || "assistant",
-                        content: msg.content || undefined,
-                        reasoning_content: msg.reasoning_content || undefined,
-                        tool_calls: msg.tool_calls || undefined,
-                    };
-                }
+      function renderConversation(data) {
+        const container = document.getElementById('panel-conversation');
+        container.innerHTML = '';
 
-                return { role: "assistant" };
-            },
+        // Use the parser to get clean conversation structure
+        const conversation = parseLogToConversation(data);
+
+        // Configuration for known fields - defines Titles and specific Formatters
+        const keyConfig = {
+          reasoning_content: { title: 'Reasoning', className: 'reasoning-box' },
+          content: { title: 'Content', className: 'content-box' },
+          tool_calls: { title: 'Tool Calls', className: 'tool-calls-box', formatter: formatToolCalls },
+          tool_call_id: { title: 'Tool Call ID', className: 'meta-box' },
+          output: {
+            title: 'Output',
+            className: 'output-box',
+            formatter: (val) => (typeof val === 'string' ? val : JSON.stringify(val, null, 2)),
+          },
+          arguments: { title: 'Arguments', className: 'code-box', formatter: formatToolArguments },
+          name: { title: 'Name', className: 'meta-box' },
+          function: { title: 'Function', className: 'code-box', formatter: (val) => JSON.stringify(val, null, 2) },
+          call_id: { title: 'Call ID', className: 'meta-box' },
+          id: { title: 'ID', className: 'meta-box' },
         };
 
-        const responsesParser = {
-            id: "responses",
-            match: (url) => typeof url === "string" && url.endsWith("/responses"),
-            parseRequest: (logObj) => parseInputMessages(logObj?.request?.body?.input || []),
-            parseResponse: (logObj) => {
-                if (
-                    logObj?.response?.body?.type === "sse-stream" &&
-                    Array.isArray(logObj.response.body.preview)
-                ) {
-                    return parseSSEStreamToMessage(logObj.response.body.preview);
-                }
+        // Order of display for known fields
+        const displayOrder = [
+          'reasoning_content',
+          'content',
+          'tool_calls',
+          'output',
+          'tool_call_id',
+          'call_id',
+          'name',
+          'arguments',
+          'function',
+          'id',
+        ];
 
-                return { role: "assistant" };
-            },
-        };
-
-        registerParser(chatCompletionsParser);
-        registerParser(responsesParser);
-
-        function updateStats() {
-            const total = filesData.length;
-            if (total === 0) return;
-
-            let totalDuration = 0;
-            let streamCount = 0;
-            let jsonCount = 0;
-            const models = new Set();
-
-            filesData.forEach(f => {
-                const meta = f.data.metadata;
-                totalDuration += (meta.durationMs || 0);
-
-                if (meta.responseType === 'stream' || (f.data.response.body && f.data.response.body.type === 'sse-stream')) {
-                    streamCount++;
-                } else {
-                    jsonCount++;
-                }
-
-                try {
-                    let model = null;
-                    if (f.data.request.body && f.data.request.body.model) {
-                        model = f.data.request.body.model;
-                    } else if (typeof f.data.request.body === 'string') {
-                        const parsed = JSON.parse(f.data.request.body);
-                        if (parsed.model) model = parsed.model;
-                    }
-                    if (model) models.add(model);
-                } catch (e) { }
+        // Helper: Copy to Clipboard
+        const copyToClipboard = (text, btn) => {
+          if (!text) return;
+          navigator.clipboard
+            .writeText(text)
+            .then(() => {
+              const originalText = btn.textContent;
+              btn.textContent = 'Copied!';
+              btn.style.color = '#3fb950';
+              btn.style.borderColor = '#3fb950';
+              setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.color = '';
+                btn.style.borderColor = '';
+              }, 2000);
+            })
+            .catch((err) => {
+              console.error('Failed to copy:', err);
             });
+        };
 
-            document.getElementById('stat-total').textContent = total;
-            document.getElementById('stat-duration').textContent = Math.round(totalDuration / total) + 'ms';
-            document.getElementById('stat-types').textContent = `${streamCount} / ${jsonCount}`;
-            document.getElementById('stat-models').textContent = models.size;
+        // Helper: Syntax Highlighting for JSON
+        const highlightSyntax = (jsonStr) => {
+          if (!jsonStr) return '';
+          // Only process strings that look like JSON objects or arrays
+          const trimmed = jsonStr.trim();
+          if (
+            !((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))
+          ) {
+            // Try to catch raw JSON values but avoid highlighting random text
+            return escapeHtml(jsonStr);
+          }
 
-            document.getElementById('stats-bar').style.display = 'flex';
+          // Simple regex-based highlighter (escapes HTML first to be safe, but we need to run regex on raw string then wrap matches)
+          // Actually, safer to run on raw string and then wrap.
+
+          // Let's rely on a simpler approach: regex replace on the string, but careful about HTML injection.
+          // Since we are generating HTML spans, we need to be careful.
+
+          // Strategy: Tokenize and escape values.
+          return jsonStr.replace(
+            /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+            function (match) {
+              let cls = 'hljs-number';
+              if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                  cls = 'hljs-key';
+                  // Remove colon for class application, or keep it?
+                  // match is like "key":
+                  // We want <span class="key">"key"</span>:
+                  return '<span class="' + cls + '">' + escapeHtml(match.slice(0, -1)) + '</span>:';
+                } else {
+                  cls = 'hljs-string';
+                  return '<span class="' + cls + '">' + escapeHtml(match) + '</span>';
+                }
+              } else if (/true|false/.test(match)) {
+                cls = 'hljs-boolean';
+              } else if (/null/.test(match)) {
+                cls = 'hljs-null';
+              }
+              return '<span class="' + cls + '">' + match + '</span>';
+            },
+          );
+        };
+
+        // Helper function to render a single message
+        const renderMsg = (msg) => {
+          const div = document.createElement('div');
+          const roleClass = msg.role ? `role-${msg.role}` : 'role-unknown';
+          div.className = `message ${roleClass}`;
+
+          const roleLabel = msg.role || msg.type || 'unknown';
+
+          // 1. Role Title
+          const roleDiv = document.createElement('div');
+          roleDiv.className = 'message-role';
+          roleDiv.textContent = roleLabel;
+          div.appendChild(roleDiv);
+
+          // Collect keys to render (Skip role/type as they are the header)
+          const keys = Object.keys(msg).filter((k) => k !== 'role' && k !== 'type');
+
+          // Sort keys: Known fields in displayOrder, then others alphabetically
+          keys.sort((a, b) => {
+            const idxA = displayOrder.indexOf(a);
+            const idxB = displayOrder.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+          });
+
+          let hasContent = false;
+
+          // 2. Render Keys as Sub-Boxes
+          for (const key of keys) {
+            const val = msg[key];
+            if (val === undefined || val === null) continue;
+            if (Array.isArray(val) && val.length === 0) continue;
+            if (typeof val === 'string' && val.trim() === '') continue;
+
+            hasContent = true;
+
+            const config = keyConfig[key] || {};
+            const title = config.title || key; // Default to key name
+            const className = config.className || 'generic-box';
+            const formatter = config.formatter || ((v) => (typeof v === 'string' ? v : JSON.stringify(v, null, 2)));
+
+            // Determine content string for copy
+            let rawContent = val;
+            if (typeof rawContent !== 'string') {
+              try {
+                rawContent = JSON.stringify(rawContent, null, 2);
+              } catch (e) {}
+            }
+
+            let displayContent = formatter(val);
+            let isHtml = false;
+
+            // Apply syntax highlighting
+            if (className === 'tool-calls-box' || className === 'code-box' || className === 'output-box') {
+              if (
+                typeof displayContent === 'string' &&
+                (displayContent.trim().startsWith('{') || displayContent.trim().startsWith('['))
+              ) {
+                displayContent = highlightSyntax(displayContent);
+                isHtml = true;
+              }
+            }
+
+            // Fallback escape if not highlighting
+            if (!isHtml) {
+              displayContent = escapeHtml(displayContent);
+            }
+
+            const subBox = document.createElement('div');
+            subBox.className = `sub-box ${className}`;
+
+            // Create Header with Copy Button
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'sub-box-header';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = title;
+            headerDiv.appendChild(titleSpan);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn-copy';
+            copyBtn.textContent = 'Copy';
+            copyBtn.onclick = (e) => {
+              e.stopPropagation();
+              copyToClipboard(rawContent, copyBtn);
+            };
+            headerDiv.appendChild(copyBtn);
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'sub-box-content';
+            contentDiv.innerHTML = displayContent;
+
+            subBox.appendChild(headerDiv);
+            subBox.appendChild(contentDiv);
+            div.appendChild(subBox);
+          }
+
+          // 3. Empty State
+          if (!hasContent) {
+            const empty = document.createElement('div');
+            empty.className = 'message-content';
+            empty.style.color = 'var(--text-secondary)';
+            empty.style.fontStyle = 'italic';
+            empty.textContent = '(empty)';
+            div.appendChild(empty);
+          }
+
+          container.appendChild(div);
+        };
+
+        // Display all messages from request
+        for (const msg of conversation.request.messages) {
+          renderMsg(msg);
         }
 
-        window.switchTab = function (tabName) {
-            for (const t of document.querySelectorAll('.tab')) {
-                t.classList.remove('active');
-            }
-            for (const p of document.querySelectorAll('.panel')) {
-                p.classList.remove('active');
-            }
-
-            event.target.classList.add('active');
-            document.getElementById(`panel-${tabName}`).classList.add('active');
+        // Display response message
+        const responseMsg = conversation.response.message;
+        if (responseMsg) {
+          renderMsg(responseMsg);
         }
+      }
+
+      function formatToolCalls(toolCalls) {
+        // Display raw JSON for tool_calls without further parsing
+        return JSON.stringify(toolCalls, null, 2);
+      }
+
+      function createDetailsElement(title, content, expanded) {
+        const details = document.createElement('details');
+        if (expanded) details.open = true;
+
+        const summary = document.createElement('summary');
+        summary.textContent = title;
+        details.appendChild(summary);
+
+        if (content instanceof HTMLElement) {
+          details.appendChild(content);
+        } else {
+          const pre = document.createElement('pre');
+          pre.textContent = content;
+          details.appendChild(pre);
+        }
+
+        return details;
+      }
+
+      function renderGenericFields(obj, opts) {
+        if (!obj || typeof obj !== 'object') return null;
+
+        const { collapsedFields, expandedFields } = opts;
+        const wrapper = document.createElement('div');
+        let hasContent = false;
+
+        for (const [key, value] of Object.entries(obj)) {
+          const label = `${key}`;
+          const shouldExpand = expandedFields.has(key);
+          const shouldCollapse = collapsedFields.has(key);
+
+          if (value === null || value === undefined) continue;
+
+          hasContent = true;
+
+          if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            const row = document.createElement('div');
+            row.className = 'kv-row';
+            row.textContent = `${label}: ${value}`;
+            wrapper.appendChild(row);
+            continue;
+          }
+
+          let content;
+          try {
+            content = JSON.stringify(value, null, 2);
+          } catch (e) {
+            content = String(value);
+          }
+
+          const details = createDetailsElement(label, content, shouldExpand && !shouldCollapse);
+          wrapper.appendChild(details);
+        }
+
+        return hasContent ? wrapper : null;
+      }
+
+      function formatToolArguments(args) {
+        if (args === undefined || args === null) return '(no arguments)';
+        if (typeof args !== 'string') {
+          try {
+            return JSON.stringify(args, null, 2);
+          } catch (e) {
+            return String(args);
+          }
+        }
+        if (args.trim() === '') return '(no arguments)';
+        try {
+          return JSON.stringify(JSON.parse(args), null, 2);
+        } catch (e) {
+          return args;
+        }
+      }
+
+      function escapeHtml(text) {
+        if (!text) return '';
+        return text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // ========== Protocol Parsers ==========
+
+      const chatCompletionsParser = {
+        id: 'chat-completions',
+        match: (url) => typeof url === 'string' && url.endsWith('/chat/completions'),
+        parseRequest: (logObj) => parseRequestMessages(logObj?.request?.body?.messages || []),
+        parseResponse: (logObj) => {
+          if (logObj?.response?.body?.type === 'sse-stream' && Array.isArray(logObj.response.body.preview)) {
+            return parseSSEStreamToMessage(logObj.response.body.preview);
+          }
+
+          if (logObj?.response?.body?.choices?.[0]?.message) {
+            const msg = logObj.response.body.choices[0].message;
+            return {
+              role: msg.role || 'assistant',
+              content: msg.content || undefined,
+              reasoning_content: msg.reasoning_content || undefined,
+              tool_calls: msg.tool_calls || undefined,
+            };
+          }
+
+          return { role: 'assistant' };
+        },
+      };
+
+      const responsesParser = {
+        id: 'responses',
+        match: (url) => typeof url === 'string' && url.endsWith('/responses'),
+        parseRequest: (logObj) => parseInputMessages(logObj?.request?.body?.input || []),
+        parseResponse: (logObj) => {
+          if (logObj?.response?.body?.type === 'sse-stream' && Array.isArray(logObj.response.body.preview)) {
+            return parseSSEStreamToMessage(logObj.response.body.preview);
+          }
+
+          return { role: 'assistant' };
+        },
+      };
+
+      registerParser(chatCompletionsParser);
+      registerParser(responsesParser);
+
+      function updateStats() {
+        const total = filesData.length;
+        if (total === 0) return;
+
+        let totalDuration = 0;
+        let streamCount = 0;
+        let jsonCount = 0;
+        const models = new Set();
+
+        filesData.forEach((f) => {
+          const meta = f.data.metadata;
+          totalDuration += meta.durationMs || 0;
+
+          if (meta.responseType === 'stream' || (f.data.response.body && f.data.response.body.type === 'sse-stream')) {
+            streamCount++;
+          } else {
+            jsonCount++;
+          }
+
+          try {
+            let model = null;
+            if (f.data.request.body && f.data.request.body.model) {
+              model = f.data.request.body.model;
+            } else if (typeof f.data.request.body === 'string') {
+              const parsed = JSON.parse(f.data.request.body);
+              if (parsed.model) model = parsed.model;
+            }
+            if (model) models.add(model);
+          } catch (e) {}
+        });
+
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-duration').textContent = Math.round(totalDuration / total) + 'ms';
+        document.getElementById('stat-types').textContent = `${streamCount} / ${jsonCount}`;
+        document.getElementById('stat-models').textContent = models.size;
+
+        document.getElementById('stats-bar').style.display = 'flex';
+      }
+
+      window.switchTab = function (tabName) {
+        for (const t of document.querySelectorAll('.tab')) {
+          t.classList.remove('active');
+        }
+        for (const p of document.querySelectorAll('.panel')) {
+          p.classList.remove('active');
+        }
+
+        event.target.classList.add('active');
+        document.getElementById(`panel-${tabName}`).classList.add('active');
+      };
     </script>
-
-</body>
-
+  </body>
 </html>
+
